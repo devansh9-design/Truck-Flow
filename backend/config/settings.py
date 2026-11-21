@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,11 +32,14 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
     "api",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -50,8 +54,28 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
-# No database: the spec has no server-side persistence (ADR 005).
-DATABASES: dict = {}
+# Accounts and saved trips (ADR 012). Deployed: Render Postgres via DATABASE_URL.
+# Locally (DEBUG) a SQLite file is used when DATABASE_URL is unset.
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if not _DATABASE_URL and not DEBUG:
+    raise RuntimeError("DATABASE_URL must be set when DJANGO_DEBUG is false")
+DATABASES = {
+    "default": dj_database_url.parse(
+        _DATABASE_URL or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+
+AUTH_USER_MODEL = "accounts.User"
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+     "OPTIONS": {"user_attributes": ("email", "name")}},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+     "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 CACHES = {
     "default": {
@@ -77,9 +101,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = _env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [],
-    "UNAUTHENTICATED_USER": None,
+    # Optional sign-in (ADR 013): no header = guest; most endpoints stay open to guests.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.auth.BearerTokenAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    # Client IP for guest rate limits: count of proxies in front of Django that append to
+    # X-Forwarded-For (Render: see docs/deployment.md). None = use the socket address.
+    "NUM_PROXIES": int(os.environ["NUM_PROXIES"]) if os.environ.get("NUM_PROXIES") else None,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "EXCEPTION_HANDLER": "api.errors.exception_handler",
@@ -103,6 +130,16 @@ TRUCK_TARE_LB = float(os.environ.get("TRUCK_TARE_LB", "35000"))
 
 RISK_ENGINE_URL = os.environ.get("RISK_ENGINE_URL", "http://127.0.0.1:5001").rstrip("/")
 RISK_ENGINE_TOKEN = os.environ.get("RISK_ENGINE_TOKEN", "")
+
+# Rate limits per endpoint group: guests per IP, signed-in users per account.
+API_RATES = {
+    "analyze": {"anon": "30/hour", "user": "120/hour"},
+    "heatmap": {"anon": "60/hour", "user": "240/hour"},
+    "alerts": {"anon": "60/hour", "user": "240/hour"},
+    "geocode": {"anon": "60/min", "user": "120/min"},
+    "auth": {"anon": "10/min", "user": "10/min"},
+    "trips": {"anon": "60/min", "user": "60/min"},
+}
 
 # Forecast horizon (spec D11): Open-Meteo serves up to 16 days.
 FORECAST_HORIZON_DAYS = 16

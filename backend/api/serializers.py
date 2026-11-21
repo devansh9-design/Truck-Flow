@@ -19,7 +19,8 @@ class PlaceField(serializers.Field):
     """Free text (geocoded server-side) or an already-resolved {label, lat, lon}."""
 
     default_error_messages = {
-        "invalid": "Enter a place name or a {label, lat, lon} object.",
+        # Braces doubled: DRF formats these messages with str.format.
+        "invalid": "Enter a place name or a {{label, lat, lon}} object.",
         "length": "Place text must be 2-200 characters.",
     }
 

@@ -9,3 +9,5 @@ flexpolyline==0.1.0
 pydantic==2.14.4
 python-dotenv==1.2.4
 gunicorn==27.0.1
+dj-database-url==3.0.1
+psycopg[binary]==3.2.12

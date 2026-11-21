@@ -62,7 +62,8 @@ The app generates multiple route options, evaluates the weather along each one a
 | FR-G | Responsive layout usable on mobile (≥ 360 px wide). |
 | FR-H | Metric / imperial unit toggle (display only; rules always evaluated in imperial). |
 | FR-I | Basic weather alerts along the route (US National Weather Service active alerts). **Informational only:** alerts never change a risk level or the ranking. |
-| FR-J | Saved trips in the browser (localStorage). |
+| FR-J | Saved trips: in the browser (localStorage) for guests, on the server for signed-in users. |
+| FR-K | Optional user accounts (added after Upgrade 2, D15): sign up with name, email, password and country (continent derived from it); sign in / out; edit profile, change password, delete account. Guests keep full use of the app. Staff can see user counts by country and continent. Accounts never change a core result. |
 
 ## 4. Non-functional requirements
 
@@ -169,6 +170,8 @@ The spec leaves these points open. Each decision is fixed here, implemented once
 | D12 | Guaranteeing 3 routes (CORE-1) | Ask HERE for up to 5 alternatives, drop near-duplicates (> 90% shared length) and keep the best 3. If fewer than 3 remain, generate extra options through a via-point offset to either side of the route midpoint. Only if no third distinct road exists (e.g. a very short trip) are fewer shown, with the reason stated. |
 | D13 | Weight sent to the router | The router needs gross vehicle weight = load + `TRUCK_TARE_LB` (configurable, default 35,000 lb). The risk and load rules always use the **load weight exactly as entered**. |
 | D14 | Heatmap time base | Slider hour 0 = the departure hour; hours 0–48 run forward from it. |
+| D15 | Accounts (revises §9) | The developer chose to ship accounts and a database rather than stay a prototype. Sign-in is **optional**; an account stores a profile country and saved trips. Routes, weather, risk and ranking are identical for guests and users. Email verification and password reset wait until an email provider is chosen. |
+| D16 | Abuse protection | Public endpoints are rate-limited (guests per IP, users per account) to protect the HERE quota; over the limit returns 429 `RATE_LIMITED`. |
 
 ## 7. Deliverables
 
@@ -188,7 +191,8 @@ The spec leaves these points open. Each decision is fixed here, implemented once
 ## 9. Out of scope
 
 - Building a routing engine (third-party APIs are used).
-- User accounts, server-side trip storage, payments.
+- Payments. (User accounts and server-side trip storage were moved into scope later: D15.)
+- Email verification and password reset (until an email provider is chosen).
 - Real-time traffic, tolls, hours-of-service planning.
 - Phase 4 production hardening (observability, load testing, quotas).
 

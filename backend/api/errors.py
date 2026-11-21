@@ -78,6 +78,29 @@ def exception_handler(exc: Exception, context: dict) -> Response:
         return error_response(400, "VALIDATION_ERROR", message, {"field": field} if field else None)
     if isinstance(exc, drf_exc.ParseError):
         return error_response(400, "VALIDATION_ERROR", "Request body is not valid JSON.")
+    if isinstance(exc, drf_exc.Throttled):
+        wait = int(exc.wait) if exc.wait is not None else None
+        resp = error_response(
+            429, "RATE_LIMITED",
+            "Too many requests. " + (f"Try again in {wait} s." if wait is not None else "Try again later."),
+            {"retry_after_s": wait} if wait is not None else None,
+        )
+        if wait is not None:
+            resp["Retry-After"] = str(wait)
+        return resp
+    if isinstance(exc, (drf_exc.NotAuthenticated, drf_exc.AuthenticationFailed)):
+        not_signed_in = isinstance(exc, drf_exc.NotAuthenticated)
+        resp = error_response(
+            exc.status_code,
+            "NOT_AUTHENTICATED" if not_signed_in else "TOKEN_INVALID",
+            "Please sign in to continue." if not_signed_in else str(exc.detail),
+        )
+        auth_header = getattr(exc, "auth_header", None)
+        if auth_header:
+            resp["WWW-Authenticate"] = auth_header
+        return resp
+    if isinstance(exc, drf_exc.PermissionDenied):
+        return error_response(403, "FORBIDDEN", "You do not have access to this.")
     if isinstance(exc, Http404):
         return error_response(404, "NOT_FOUND", "Not found.")
     if isinstance(exc, drf_exc.APIException):

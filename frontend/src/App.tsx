@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiError } from './api/client'
 import { useAlerts, useAnalyze, useHeatmap } from './api/hooks'
 import type { AnalyzeRequest } from './api/types'
+import { useSessionCheck } from './api/account'
+import { AccountMenu } from './components/Account'
 import { AlertsPanel } from './components/AlertsPanel'
 import { MOBILE_QUERY, useBottomSheet, useMediaQuery, type Snap } from './components/BottomSheet'
 import { HeatmapPanel } from './components/HeatmapPanel'
@@ -28,6 +30,7 @@ function useElapsed(start: number | null): number {
 }
 
 export default function App() {
+  useSessionCheck()
   const analyze = useAnalyze()
   const reset = useUi((s) => s.reset)
   const setTimeZone = useUi((s) => s.setTimeZone)
@@ -131,6 +134,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <UnitToggle />
             <StatusPill />
+            <AccountMenu />
           </div>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">

@@ -16,7 +16,8 @@ flowchart TB
     D -->|POST /v1/evaluate<br/>POST /v1/heatmap<br/>POST /v1/alerts<br/>X-Internal-Token| F[Flask risk engine<br/>internal service]
     F -->|hourly forecast| O[(Open-Meteo)]
     F -->|active alerts| N[(NWS api.weather.gov)]
-    U -. localStorage .- S[(Saved trips)]
+    U -. localStorage .- S[(Guest saved trips)]
+    D --> P[(Postgres<br/>users, tokens, saved trips)]
 ```
 
 | Component | Responsibility | Does **not** do |
@@ -71,7 +72,11 @@ Django → Flask `POST /v1/alerts` → NWS active alerts for points along the ro
 
 ### 2.4 Saved trips
 
-Browser only. The trip inputs plus a short result summary are stored in `localStorage`; reopening a saved trip re-runs the analysis so weather is always fresh.
+Guests: browser only (`localStorage`). Signed-in users: `GET/POST /api/trips`, stored in Postgres per user (max 20). Either way a saved trip holds the inputs plus a short summary; reopening re-runs the analysis so weather is always fresh. On sign-in, trips saved in the browser are moved into the account.
+
+### 2.5 Accounts — `/api/auth/*` (optional, D15)
+
+Sign-up / sign-in returns a bearer token (`Authorization: Bearer …`, ADR 013). Only its SHA-256 is stored; it expires 30 days after last use and is deleted on sign-out. Every endpoint accepts guests except `/api/auth/me*`, `/api/auth/logout`, `/api/auth/password` and `/api/trips*` (signed in) and `/api/admin/stats` (staff). Trip queries are always filtered by the requesting user, so another user's trip answers 404.
 
 ## 3. Core algorithms
 
@@ -125,9 +130,11 @@ truck-routing/
 | Forecasts | Flask TTL cache, key = (lat, lon rounded to 0.1°, hour) | 30 min |
 | Heatmap frames | Flask TTL cache, key = (bbox rounded, start hour, load) | 30 min |
 | Alerts | Flask TTL cache | 10 min |
-| Saved trips | Browser `localStorage` | Until the user deletes them |
+| Saved trips (guest) | Browser `localStorage` | Until the user deletes them |
+| Users, sign-in tokens, saved trips (signed in) | Postgres (Render); SQLite file locally | Until deleted; tokens 30 days after last use |
+| Rate-limit counters | Django local-memory cache | Per window (minute / hour) |
 
-No database is needed: the spec has no server-side persistence requirement. Redis and Postgres are deliberately left out to reduce deployment risk.
+Postgres was added with accounts (ADR 012). Redis is still left out: one Django worker means the in-memory caches and rate-limit counters are shared.
 
 ## 6. Deployment topology
 
@@ -140,7 +147,8 @@ flowchart LR
 | Service | Host | Environment variables |
 |---|---|---|
 | Frontend | Vercel | `VITE_API_BASE_URL`, `VITE_MAP_STYLE_URL` |
-| Django | Render | `HERE_API_KEY`, `TRUCK_TARE_LB`, `RISK_ENGINE_URL`, `RISK_ENGINE_TOKEN`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` |
+| Django | Render | `HERE_API_KEY`, `TRUCK_TARE_LB`, `RISK_ENGINE_URL`, `RISK_ENGINE_TOKEN`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DATABASE_URL` (from Render Postgres), `NUM_PROXIES` |
+| Postgres | Render | managed database `truck-routing-db` (render.yaml) |
 | Flask | Render | `RISK_ENGINE_TOKEN`, `NWS_USER_AGENT` |
 
 Render's free services sleep when idle; the frontend calls `/api/health` on load to wake both services before the user submits.
@@ -153,7 +161,7 @@ Render's free services sleep when idle; the frontend calls `/api/health` on load
 | **Time** | All timestamps are ISO 8601 UTC on the wire; the UI shows local time with the zone. |
 | **Errors** | One JSON error shape everywhere (see `API contracts.md`); upstream failures map to 502/504 with a readable message. |
 | **Resilience** | httpx timeouts (connect 5 s, read 15 s), one retry with backoff on 5xx/timeouts, partial results never shown as complete. |
-| **Security** | Keys in env vars only; Flask requires `X-Internal-Token`; CORS limited to the frontend origin; input validated server-side. |
+| **Security** | Keys in env vars only; Flask requires `X-Internal-Token`; CORS limited to the frontend origin; input validated server-side; passwords hashed (PBKDF2) and checked against Django's validators; sign-in tokens stored hashed, expiring, revocable; per-user authorization on saved trips; staff-only statistics; rate limits on every public endpoint (sign-in 10/min per IP). |
 | **Performance** | Weather requests deduped and batched; checkpoints fetched concurrently; heatmap fetched once per corridor. |
 | **Accessibility** | Risk shown as text + colour + icon; colour-blind-safe palette; keyboard-operable slider and forms; ARIA labels. |
 
@@ -165,10 +173,13 @@ Render's free services sleep when idle; the frontend calls `/api/health` on load
 | 002 | HERE Routing v8 in truck mode | Truck-aware, alternatives on long routes, takes gross weight |
 | 003 | Open-Meteo for forecasts | Free, keyless, hourly, imperial units, multi-location requests |
 | 004 | Flask stays internal behind Django | One public origin, simpler CORS, secrets isolated |
-| 005 | No database or Redis | Not required by the spec; fewer moving parts to deploy |
+| 005 | No database or Redis | Not required by the spec; fewer moving parts to deploy. **Superseded for the database by ADR 012.** |
 | 006 | MapLibre + deck.gl | WebGL rendering for routes, markers and a 49-frame heatmap |
 | 010 | Heatmap drawn with deck.gl `BitmapLayer` (one pixel per grid cell, linear filtering), not `HeatmapLayer` | `HeatmapLayer` estimates point *density*: its kernel spread is ~8% of `radiusPixels` (capped at 100 px), so a ~256-cell corridor grid renders as separate dots. A gridded forecast is a field; a filtered bitmap shows it continuously with exact cell values. |
 | 011 | deck.gl overlaid (own canvas), not interleaved | `@deck.gl/mapbox` 9.4's interleaved renderer reads `map.transform`, which MapLibre 6 no longer exposes. Route markers are DOM elements and stay on top. |
 | 007 | Conservative segment attribution (worse endpoint) | Safety-first reading of "Severe miles" |
 | 008 | Severe and No Travel miles kept separate; fewest No Travel miles ranked first, then the spec's four keys | The spec doesn't say how No Travel ranks; this stops an impassable route from winning without reordering the spec's keys |
 | 009 | Router gets gross weight (load + configurable tare); rules use load as entered | The router needs total vehicle weight; the spec's load rules refer to the load |
+| 012 | Optional accounts in Postgres (Render), SQLite locally; custom user model (email login, name, ISO country; continent derived) | The developer chose to ship accounts (spec D15). Optional sign-in keeps the app usable without an account; Postgres because Render's disk is wiped on every deploy. |
+| 013 | Bearer tokens, not session cookies | The app (Vercel) and the API (Render) are different sites, where browsers block or partition third-party cookies. A random token, stored only as a SHA-256 and sent in `Authorization`, needs no CSRF protection and can be revoked. Trade-off: it lives in `localStorage`, so the app keeps no HTML injection points (React escapes all text). |
+| 014 | Rate limits in the local-memory cache | One worker shares the counters; no Redis needed. Guests per IP (`NUM_PROXIES` picks the client address from `X-Forwarded-For`), users per account. |

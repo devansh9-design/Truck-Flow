@@ -209,3 +209,9 @@ Notes from this pass:
 - [x] P3-3 alerts: risk engine (`tests/test_alerts.py`, recorded NWS responses: a High Wind Warning, an empty answer, the out-of-bounds 400), Django pass-through + validation (`tests/test_alerts_api.py`), shared fixture contract test, Vitest sampling and panel states, E2E US list + map badge and the non-US message.
 - [x] P3-4 saved trips: Vitest add / list / delete / cap at 20 / corrupt storage / refused writes; E2E save → reload → listed → reopen re-runs the analysis with the resolved places → delete.
 - Totals after Upgrade 2: backend 172, risk engine 196, shared 5, frontend 71 (Vitest) + 12 (Playwright).
+
+## 13. Accounts (D15, D16)
+
+- [x] Backend (`tests/test_accounts.py`, `tests/test_throttling.py`): sign-up validation (email, name, country, password rules), case-insensitive email, generic sign-in error, hashed passwords and tokens, 30-day sliding expiry, sign-out revokes one token, password change signs out other devices, account deletion (password required, cascades), trips need sign-in, newest first + identical replaced + cap 20, users cannot see or delete others' trips (404), import from the browser, staff-only stats (401/403), 249 countries with continents, rate limits per IP and per account with 429 + `Retry-After`; a malformed place is a 400, not a 500.
+- [x] Frontend E2E (`e2e/accounts.spec.ts`, mocked account server): guest use, sign-up moves browser trips into the account and sets units from the country, reload stays signed in, signed-in saves go to the server, sign-out, wrong password, axe scan of the dialog.
+- Totals: backend 208, frontend 74 (Vitest) + 16 (Playwright).

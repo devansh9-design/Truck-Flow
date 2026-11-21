@@ -39,7 +39,9 @@ Versions: latest stable release of each tool at project setup, pinned in `packag
 | HERE polyline | **flexpolyline** | Decodes HERE's flexible polyline format |
 | Schemas | **Pydantic** (shared package) | Same models as Flask; contract safety |
 | CORS | **django-cors-headers** | Allows only the frontend origin |
-| Cache | Django **LocMemCache** | Geocode caching without Redis |
+| Cache | Django **LocMemCache** | Geocode caching and rate-limit counters without Redis |
+| Database | **PostgreSQL** (Render) via **dj-database-url** + **psycopg 3**; SQLite locally | Accounts and saved trips (ADR 012) |
+| Auth | Django auth (custom email user) + DRF bearer-token class + DRF throttling | Optional sign-in, per-user authorization, rate limits (ADR 013, 014) |
 | Server | **gunicorn** | Production WSGI server on Render |
 | Config | **python-dotenv** / env vars | Secrets outside the code |
 
@@ -90,7 +92,6 @@ Versions: latest stable release of each tool at project setup, pinned in `packag
 | Tool | Reason |
 |---|---|
 | Redis | In-memory caches are enough for this scope; one less service to deploy |
-| PostgreSQL | No server-side persistence required; saved trips live in the browser |
 | Celery | Analysis fits within the latency target without background jobs |
 | Docker | Not needed for Vercel/Render; services run directly |
 | Next.js | No server-side rendering needed |

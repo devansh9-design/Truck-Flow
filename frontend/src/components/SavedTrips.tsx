@@ -1,31 +1,41 @@
 import { useState } from 'react'
+import { useTrips } from '../api/account'
 import type { AnalyzeResponse } from '../api/types'
-import { riskStyle } from '../lib/risk'
-import { sameTrip, tripFromResult, type SavedTrip } from '../lib/savedTrips'
-import { useSavedTrips } from '../store/savedTrips'
-import { useUi, useUnitFormat } from '../store/ui'
 import { formatTime } from '../lib/format'
+import { riskStyle } from '../lib/risk'
+import type { SavedTrip } from '../lib/savedTrips'
+import { useUi, useUnitFormat } from '../store/ui'
 
 /** P3-4: save the analysed trip's inputs (not its results: reopening re-runs the analysis). */
 export function SaveTripButton({ data }: { data: AnalyzeResponse }) {
-  const trips = useSavedTrips((s) => s.trips)
-  const save = useSavedTrips((s) => s.save)
+  const source = useTrips()
   const timeZone = useUi((s) => s.timeZone)
-  const [failed, setFailed] = useState(false)
-  const saved = trips.some((t) => sameTrip(t, tripFromResult(data, timeZone)))
+  const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle')
+  const saved = source.isSaved(data, timeZone)
+  const failText = source.signedIn
+    ? "Couldn't save to your account. Try again."
+    : 'This browser blocked storage; the trip is kept for this visit only.'
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        disabled={saved}
-        onClick={() => setFailed(!save(data, timeZone))}
+        disabled={saved || state === 'saving'}
+        onClick={async () => {
+          setState('saving')
+          setState((await source.save(data, timeZone)) ? 'idle' : 'failed')
+        }}
         className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50 disabled:cursor-default disabled:border-emerald-300 disabled:bg-emerald-50 disabled:text-emerald-800"
       >
-        {saved ? '✓ Trip saved' : '☆ Save trip'}
+        {saved ? '✓ Trip saved' : state === 'saving' ? 'Saving…' : '☆ Save trip'}
       </button>
-      {failed && (
+      {!source.signedIn && !saved && (
+        <span className="text-[11px] text-slate-500">
+          Saved in this browser · sign in to keep trips on every device
+        </span>
+      )}
+      {state === 'failed' && (
         <span role="alert" className="text-[11px] text-amber-800">
-          This browser blocked storage; the trip is kept for this visit only.
+          {failText}
         </span>
       )}
     </div>
@@ -39,14 +49,15 @@ interface ListProps {
 
 /** Saved trips, newest first. Reopen re-runs the analysis so weather is always fresh. */
 export function SavedTripsList({ onReopen, busy }: ListProps) {
-  const trips = useSavedTrips((s) => s.trips)
-  const remove = useSavedTrips((s) => s.remove)
+  const { trips, remove, signedIn } = useTrips()
   const u = useUnitFormat()
   if (trips.length === 0) return null
   return (
     <details className="group rounded-lg border border-slate-200 bg-white text-xs shadow-sm" data-testid="saved-trips">
       <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 font-semibold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50">
-        <span>Saved trips ({trips.length})</span>
+        <span>
+          {signedIn ? 'Your saved trips' : 'Saved trips'} ({trips.length})
+        </span>
         <span aria-hidden="true" className="text-slate-400 transition-transform group-open:rotate-180">
           ▾
         </span>
