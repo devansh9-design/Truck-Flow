@@ -1,0 +1,39 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "Barca, Castilla y León, España",
+    "id": "here:cm:namedplace:20311762",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barca, Castilla y León, España",
+     "countryCode": "ESP",
+     "countryName": "España",
+     "stateCode": "CL",
+     "state": "Castilla y León",
+     "county": "Soria",
+     "city": "Barca",
+     "postalCode": "42210"
+    },
+    "position": {
+     "lat": 41.45574,
+     "lng": -2.62148
+    },
+    "mapView": {
+     "west": -2.6965,
+     "south": 41.39222,
+     "east": -2.59446,
+     "north": 41.48511
+    },
+    "scoring": {
+     "queryScore": 0.99,
+     "fieldScore": {
+      "city": 0.8
+     }
+    }
+   }
+  ]
+ }
+}

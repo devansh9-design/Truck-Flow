@@ -29,11 +29,20 @@ export interface Mocks {
   }
 }
 
+/** Suggestions for A10 (label prefixes), with the coordinates lookup returns. */
+export const PLACES = [
+  { id: 'here:cm:namedplace:1', label: 'Barcelona, Catalonia, Spain', country: 'ES', lat: 41.38804, lon: 2.17001 },
+  { id: 'here:cm:namedplace:2', label: 'Barcelos, Portugal', country: 'PT', lat: 41.5317, lon: -8.6198 },
+  { id: 'here:cm:namedplace:3', label: 'Denver, CO, United States', country: 'US', lat: 39.74, lon: -104.99 },
+  { id: 'here:cm:namedplace:4', label: 'Salt Lake City, UT, United States', country: 'US', lat: 40.76, lon: -111.89 },
+]
+
 const COUNTRIES = {
   continents: ['Europe', 'North America'],
   countries: [
     { code: 'ES', name: 'Spain', continent: 'Europe' },
     { code: 'FR', name: 'France', continent: 'Europe' },
+    { code: 'PT', name: 'Portugal', continent: 'Europe' },
     { code: 'US', name: 'United States', continent: 'North America' },
   ],
 }
@@ -75,6 +84,20 @@ export async function mockBackend(page: Page): Promise<Mocks> {
     const needAuth = () =>
       route.fulfill({ status: 401, json: { error: { code: 'NOT_AUTHENTICATED', message: 'Please sign in.' } } })
     if (path === '/api/countries') return route.fulfill({ json: COUNTRIES })
+    if (path === '/api/places/suggest') {
+      const url = new URL(req.url())
+      const q = (url.searchParams.get('q') ?? '').toLowerCase()
+      const country = url.searchParams.get('country') ?? ''
+      const suggestions = PLACES.filter(
+        (p) => p.label.toLowerCase().startsWith(q) && (!country || p.country === country),
+      ).map(({ id, label, country: c }) => ({ id, label, country: c }))
+      return route.fulfill({ json: { suggestions } })
+    }
+    if (path === '/api/places/lookup') {
+      const p = PLACES.find((x) => x.id === new URL(req.url()).searchParams.get('id'))
+      if (!p) return route.fulfill({ status: 404, json: { error: { code: 'PLACE_NOT_FOUND', message: 'Not found.' } } })
+      return route.fulfill({ json: { label: p.label, lat: p.lat, lon: p.lon } })
+    }
     if (path === '/api/auth/signup') {
       const b = req.postDataJSON()
       const c = COUNTRIES.countries.find((x) => x.code === b.country)!

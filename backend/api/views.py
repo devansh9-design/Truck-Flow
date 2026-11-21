@@ -9,11 +9,14 @@ from rest_framework.response import Response
 
 from clients import risk_engine
 from geo.geocode import geocode
+from geo.suggest import lookup, suggest
 
 from .serializers import (
     AlertsRequestSerializer,
     GeocodeQuerySerializer,
     HeatmapQuerySerializer,
+    PlaceLookupQuerySerializer,
+    PlaceSuggestQuerySerializer,
     TripRequestSerializer,
 )
 from .services import analyze_trip, iso_z, plan_trip
@@ -84,3 +87,22 @@ def alerts(request: Request) -> HttpResponse:
     ser.is_valid(raise_exception=True)
     body = risk_engine.alerts(ser.validated_data["points"])
     return HttpResponse(body, content_type="application/json")
+
+
+@api_view(["GET"])
+@throttle_classes([scoped("geocode")])
+def place_suggest(request: Request) -> Response:
+    """A10: up to 5 place suggestions as the user types; optional country filter and bias."""
+    ser = PlaceSuggestQuerySerializer(data=request.query_params)
+    ser.is_valid(raise_exception=True)
+    v = ser.validated_data
+    return Response({"suggestions": suggest(v["q"], v.get("country"), v.get("near"))})
+
+
+@api_view(["GET"])
+@throttle_classes([scoped("geocode")])
+def place_lookup(request: Request) -> Response:
+    """A10: exact coordinates for a chosen suggestion, as a {label, lat, lon} place."""
+    ser = PlaceLookupQuerySerializer(data=request.query_params)
+    ser.is_valid(raise_exception=True)
+    return Response(lookup(ser.validated_data["id"]).model_dump())

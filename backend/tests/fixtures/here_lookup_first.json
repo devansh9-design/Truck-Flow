@@ -1,0 +1,30 @@
+{
+ "status": 200,
+ "body": {
+  "title": "Barcelona, Catalonia, Spain",
+  "id": "here:cm:namedplace:20215774",
+  "language": "en",
+  "resultType": "locality",
+  "localityType": "city",
+  "address": {
+   "label": "Barcelona, Catalonia, Spain",
+   "countryCode": "ESP",
+   "countryName": "Spain",
+   "stateCode": "CT",
+   "state": "Catalonia",
+   "county": "Barcelona",
+   "city": "Barcelona",
+   "postalCode": "08002"
+  },
+  "position": {
+   "lat": 41.38804,
+   "lng": 2.17001
+  },
+  "mapView": {
+   "west": 2.05238,
+   "south": 41.3204,
+   "east": 2.22956,
+   "north": 41.46826
+  }
+ }
+}

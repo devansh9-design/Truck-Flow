@@ -1,0 +1,199 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "Espanya, 08002, Barcelona",
+    "id": "here:cm:namedplace:20215774",
+    "language": "ca",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barcelona, Catalunya, Espanya",
+     "countryCode": "ESP",
+     "countryName": "Espanya",
+     "stateCode": "CT",
+     "state": "Catalunya",
+     "county": "Barcelona",
+     "city": "Barcelona",
+     "postalCode": "08002"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 16,
+       "end": 20
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Portugal, 4750, Barcelos",
+    "id": "here:cm:namedplace:20317516",
+    "language": "pt",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barcelos, Portugal",
+     "countryCode": "PRT",
+     "countryName": "Portugal",
+     "countyCode": "BR",
+     "county": "Braga",
+     "city": "Barcelos",
+     "postalCode": "4750"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 16,
+       "end": 20
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "România, 107055, Bărcănești",
+    "id": "here:cm:namedplace:23766014",
+    "language": "ro",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Bărcănești, România",
+     "countryCode": "ROU",
+     "countryName": "România",
+     "countyCode": "PH",
+     "county": "Prahova",
+     "city": "Bărcănești",
+     "postalCode": "107055"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 17,
+       "end": 21
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Polska, 11-010, Barczewo",
+    "id": "here:cm:namedplace:20629833",
+    "language": "pl",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barczewo, Woj. Warmińsko-Mazurskie, Polska",
+     "countryCode": "POL",
+     "countryName": "Polska",
+     "state": "Woj. Warmińsko-Mazurskie",
+     "county": "Powiat Olsztyński",
+     "city": "Barczewo",
+     "postalCode": "11-010"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 16,
+       "end": 20
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Nederland, 7244, Barchem",
+    "id": "here:cm:namedplace:20201302",
+    "language": "nl",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barchem, Gelderland, Nederland",
+     "countryCode": "NLD",
+     "countryName": "Nederland",
+     "stateCode": "GE",
+     "state": "Gelderland",
+     "county": "Lochem",
+     "city": "Barchem",
+     "postalCode": "7244"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 17,
+       "end": 21
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

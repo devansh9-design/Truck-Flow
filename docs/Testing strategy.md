@@ -215,3 +215,10 @@ Notes from this pass:
 - [x] Backend (`tests/test_accounts.py`, `tests/test_throttling.py`): sign-up validation (email, name, country, password rules), case-insensitive email, generic sign-in error, hashed passwords and tokens, 30-day sliding expiry, sign-out revokes one token, password change signs out other devices, account deletion (password required, cascades), trips need sign-in, newest first + identical replaced + cap 20, users cannot see or delete others' trips (404), import from the browser, staff-only stats (401/403), 249 countries with continents, rate limits per IP and per account with 429 + `Retry-After`; a malformed place is a 400, not a 500.
 - [x] Frontend E2E (`e2e/accounts.spec.ts`, mocked account server): guest use, sign-up moves browser trips into the account and sets units from the country, reload stays signed in, signed-in saves go to the server, sign-out, wrong password, axe scan of the dialog.
 - Totals: backend 208, frontend 74 (Vitest) + 16 (Playwright).
+
+## 14. Place suggestions (A10)
+
+- [x] Backend (`tests/test_places.py`, recorded HERE Autocomplete/Lookup responses): country filter sent as alpha-3, `near` bias rounded, whole countries dropped, caching, validation, unknown and malformed ids, upstream failures, API key never in error bodies.
+- [x] E2E (`e2e/places.spec.ts`): typing "B" lists suggestions; arrow keys + Enter pick without submitting; picked places are sent as exact coordinates; the country filter narrows results; typing again clears the exact place; a signed-in user's country is the default filter.
+- Totals: backend 226, frontend 74 (Vitest) + 19 (Playwright).
+

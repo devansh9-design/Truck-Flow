@@ -125,6 +125,10 @@ HERE_GEOCODE_URL = os.environ.get(
     "HERE_GEOCODE_URL", "https://geocode.search.hereapi.com/v1/geocode"
 )
 HERE_ROUTES_URL = os.environ.get("HERE_ROUTES_URL", "https://router.hereapi.com/v8/routes")
+HERE_AUTOCOMPLETE_URL = os.environ.get(
+    "HERE_AUTOCOMPLETE_URL", "https://autocomplete.search.hereapi.com/v1/autocomplete"
+)
+HERE_LOOKUP_URL = os.environ.get("HERE_LOOKUP_URL", "https://lookup.search.hereapi.com/v1/lookup")
 
 TRUCK_TARE_LB = float(os.environ.get("TRUCK_TARE_LB", "35000"))
 

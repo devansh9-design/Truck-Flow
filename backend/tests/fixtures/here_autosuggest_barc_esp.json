@@ -1,0 +1,244 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "Barcelona, Catalunya, Espanya",
+    "id": "here:cm:namedplace:20215774",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barcelona, Catalunya, Espanya"
+    },
+    "position": {
+     "lat": 41.38804,
+     "lng": 2.17001
+    },
+    "distance": 505376,
+    "mapView": {
+     "west": 2.05238,
+     "south": 41.3204,
+     "east": 2.22956,
+     "north": 41.46826
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 4
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Barceló",
+    "id": "here:pds:place:724ezjmg-d4772e997cdbfef40a6fa9bc7d5cf613",
+    "resultType": "place",
+    "address": {
+     "label": "Barceló, Calle de Barceló, 28004 Madrid (Madrid), España"
+    },
+    "position": {
+     "lat": 40.42679,
+     "lng": -3.69944
+    },
+    "access": [
+     {
+      "lat": 40.42684,
+      "lng": -3.69955
+     }
+    ],
+    "distance": 2979,
+    "categories": [
+     {
+      "id": "600-6100-0062",
+      "name": "Galería o centro comercial",
+      "primary": true
+     }
+    ],
+    "references": [
+     {
+      "supplier": {
+       "id": "core"
+      },
+      "id": "58592473"
+     }
+    ],
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 4
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Avenida de la Ciudad de Barcelona, Madrid (Madrid), España",
+    "id": "here:af:street:nODNQoJOgNs1bbGT-HttpC",
+    "resultType": "street",
+    "address": {
+     "label": "Avenida de la Ciudad de Barcelona, Madrid (Madrid), España"
+    },
+    "position": {
+     "lat": 40.40455,
+     "lng": -3.68158
+    },
+    "distance": 1640,
+    "mapView": {
+     "west": -3.69184,
+     "south": 40.39835,
+     "east": -3.66928,
+     "north": 40.40844
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 24,
+       "end": 28
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 24,
+        "end": 28
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Calle de Barcelona, 28012 Madrid (Madrid), España",
+    "id": "here:af:street:LQuzWC1k4bVKYeEvuev8dD",
+    "resultType": "street",
+    "address": {
+     "label": "Calle de Barcelona, 28012 Madrid (Madrid), España"
+    },
+    "position": {
+     "lat": 40.41518,
+     "lng": -3.70257
+    },
+    "distance": 1702,
+    "mapView": {
+     "west": -3.7026,
+     "south": 40.41497,
+     "east": -3.70254,
+     "north": 40.41581
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 9,
+       "end": 13
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 9,
+        "end": 13
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Barceló HOTELS & RESORTS-Emperatriz",
+    "id": "here:pds:place:724ezjqh-a3e264210f6d41ef9bfc2677e6e1dd6f",
+    "resultType": "place",
+    "address": {
+     "label": "Barceló HOTELS & RESORTS-Emperatriz, Calle de López de Hoyos, 4, 28006 Madrid (Madrid), España"
+    },
+    "position": {
+     "lat": 40.43643,
+     "lng": -3.68838
+    },
+    "access": [
+     {
+      "lat": 40.43651,
+      "lng": -3.68843
+     }
+    ],
+    "distance": 4169,
+    "categories": [
+     {
+      "id": "500-5000-0053",
+      "name": "Hotel",
+      "primary": true
+     }
+    ],
+    "chains": [
+     {
+      "id": "941",
+      "name": "Barceló HOTELS & RESORTS"
+     }
+    ],
+    "references": [
+     {
+      "supplier": {
+       "id": "core"
+      },
+      "id": "58589214"
+     },
+     {
+      "supplier": {
+       "id": "core"
+      },
+      "id": "58589419"
+     },
+     {
+      "supplier": {
+       "id": "tripadvisor"
+      },
+      "id": "11576197"
+     },
+     {
+      "supplier": {
+       "id": "tripadvisor"
+      },
+      "id": "1407909"
+     },
+     {
+      "supplier": {
+       "id": "yelp"
+      },
+      "id": "tso_s8TxVGncuTYrb4xqvQ"
+     }
+    ],
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 4
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "queryTerms": []
+ }
+}
