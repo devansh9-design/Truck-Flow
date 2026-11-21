@@ -61,7 +61,7 @@ Versions: latest stable release of each tool at project setup, pinned in `packag
 |---|---|---|---|
 | Routing | **HERE Routing v8** (`transportMode=truck`) | CORE-1 | Truck-aware, takes gross weight, returns alternatives on long routes (we keep 3), free tier covers development |
 | Geocoding | **HERE Geocoding & Search** | support | Same key as routing |
-| Weather | **Open-Meteo** forecast API | CORE-2, CORE-6 | Free, keyless, hourly data up to 16 days, mph and inch units, multiple coordinates per request |
+| Weather | **Open-Meteo** forecast API | CORE-2, CORE-6 | Free, keyless, hourly data up to 16 days, mph and inch units, multiple coordinates per request. In production the calls go through a Vercel Function relay (ADR 015) |
 | Alerts | **NWS api.weather.gov** | non-core | Free official US alerts; informational only |
 
 ## 5. Testing & quality

@@ -146,6 +146,8 @@ Postgres was added with accounts (ADR 012). Redis is still left out: one Django 
 flowchart LR
     V[Vercel<br/>static React build] -->|VITE_API_BASE_URL| DJ[Render web service<br/>Django · gunicorn]
     DJ -->|RISK_ENGINE_URL + token| FL[Render web service<br/>Flask · gunicorn]
+    FL -->|OPEN_METEO_URL| RL[Vercel Function<br/>api/open-meteo]
+    RL --> OM[(Open-Meteo)]
 ```
 
 | Service | Host | Environment variables |
@@ -153,9 +155,12 @@ flowchart LR
 | Frontend | Vercel | `VITE_API_BASE_URL`, `VITE_MAP_STYLE_URL` |
 | Django | Render | `HERE_API_KEY`, `TRUCK_TARE_LB`, `RISK_ENGINE_URL`, `RISK_ENGINE_TOKEN`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DATABASE_URL` (from Render Postgres), `NUM_PROXIES` |
 | Postgres | Render | managed database `truck-routing-db` (render.yaml) |
-| Flask | Render | `RISK_ENGINE_TOKEN`, `NWS_USER_AGENT` |
+| Flask | Render | `RISK_ENGINE_TOKEN`, `NWS_USER_AGENT`, `OPEN_METEO_URL` (relay, ADR 015) |
+| Open-Meteo relay | Vercel (same project as the frontend) | none: upstream fixed to `https://api.open-meteo.com/v1/forecast` |
 
 Render's free services sleep when idle; the frontend calls `/api/health` on load to wake both services before the user submits.
+
+Live URLs and the differences from `render.yaml` are listed in `docs/deployment.md` ("Live deployment").
 
 ## 7. Cross-cutting concerns
 
@@ -187,3 +192,4 @@ Render's free services sleep when idle; the frontend calls `/api/health` on load
 | 012 | Optional accounts in Postgres (Render), SQLite locally; custom user model (email login, name, ISO country; continent derived) | The developer chose to ship accounts (spec D15). Optional sign-in keeps the app usable without an account; Postgres because Render's disk is wiped on every deploy. |
 | 013 | Bearer tokens, not session cookies | The app (Vercel) and the API (Render) are different sites, where browsers block or partition third-party cookies. A random token, stored only as a SHA-256 and sent in `Authorization`, needs no CSRF protection and can be revoked. Trade-off: it lives in `localStorage`, so the app keeps no HTML injection points (React escapes all text). |
 | 014 | Rate limits in the local-memory cache | One worker shares the counters; no Redis needed. Guests per IP (`NUM_PROXIES` picks the client address from `X-Forwarded-For`), users per account. |
+| 015 | Open-Meteo requests go through a Vercel Function relay in production | Open-Meteo's free tier limits calls per outbound IP, and Render's free services share IPs that other tenants exhaust (429 "Daily API request limit exceeded" in Oregon and Ohio before any real use). The relay has a fixed upstream, so it is not an open proxy; `OPEN_METEO_URL` unset means direct calls (local, tests). |

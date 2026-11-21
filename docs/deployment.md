@@ -14,6 +14,22 @@ Render setup comes from `render.yaml` at the repo root. Python is pinned by `.py
 
 ---
 
+## Live deployment
+
+| Piece | Where | URL |
+|---|---|---|
+| Frontend + Open-Meteo relay | Vercel project `truck-flow` (root `frontend`) | https://truck-flow-psi.vercel.app |
+| Django API | Render `truck-routing-api-qtf7` (Oregon, Blueprint) | https://truck-routing-api-qtf7.onrender.com |
+| Postgres | Render `truck-routing-db-qtf7` (Oregon, Blueprint) | internal |
+| Flask risk engine | Render `truck-risk-engine-ohio` (Ohio, created by hand) | https://truck-risk-engine-ohio.onrender.com |
+
+The Blueprint added a `-qtf7` suffix to every name. The live setup differs from `render.yaml` in two ways:
+
+- **The risk engine runs in Ohio, outside the Blueprint.** It was recreated there while diagnosing the Open-Meteo limit (see "Open-Meteo relay" below). The Blueprint's own risk engine, `truck-risk-engine-qtf7` in Oregon, is unused. Deleting it while the Blueprint is connected makes Render recreate it on the next sync, so disconnect the Blueprint first (or remove the service from `render.yaml`).
+- **`OPEN_METEO_URL`** is set on the Ohio risk engine to `https://truck-flow-psi.vercel.app/api/open-meteo`. It is not in `render.yaml`.
+
+Both live core checks (§5) passed against the live API on 2026-11-21.
+
 ## 0. Before you start
 
 1. Push `main` to GitHub (already done for this repo).
@@ -34,7 +50,7 @@ Render setup comes from `render.yaml` at the repo root. Python is pinned by `.py
    | Service | Variable | Value |
    |---|---|---|
    | truck-risk-engine | `RISK_ENGINE_TOKEN` | the token from step 0 |
-   | truck-risk-engine | `NWS_USER_AGENT` | `truck-routing (contact: you@example.com)`; not used until weather alerts are built |
+   | truck-risk-engine | `NWS_USER_AGENT` | `truck-routing (contact: you@example.com)`; sent to NWS with every weather-alert request |
    | truck-routing-api | `HERE_API_KEY` | your HERE key |
    | truck-routing-api | `RISK_ENGINE_TOKEN` | **the same** token |
    | truck-routing-api | `RISK_ENGINE_URL` | leave a placeholder for now, e.g. `https://example.com` |
