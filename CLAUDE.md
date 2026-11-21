@@ -50,6 +50,10 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 - HERE `spans=length,duration` returns ONE span per section; we request `spans=length,duration,speedLimit` so spans split at speed-limit changes (per-zone durations for D7 ETAs).
 - Chunk 2 done: `risk_engine/rules.py` (CORE-3), Open-Meteo client `risk_engine/weather.py` (multi-location list response, `{"error": true, "reason"}` bodies, explicit unit conversion), token-protected `/v1/evaluate`, scoring + ranking (`backend/scoring/`), `POST /api/analyze`. Core check `backend/scripts/core_check_chunk2.py` passed live (Denver → SLC, 3 ranked routes, ~4 s).
 - `decided_by` also returns `only_route` when a single route exists (documented in API contracts).
-- Git: Chunk 1 is staged as the first commit; Chunk 2 is left unstaged for the second commit. Don't `git add` until the developer commits Chunk 1.
-- **Next: Chunk 3** (frontend form, map, checkpoints, route cards).
+- Chunks 1 and 2 are committed.
+- Chunk 3 done: trip form (with trip time-zone picker: departure is read in it and every time is shown in it), MapLibre map (all routes; selected route drawn as risk-coloured segments between checkpoints; recommended route blue-dashed when not selected; alternate checkpoints as clickable GPU circles), checkpoint popups (ETA, forecast hour, weather, per-factor levels, reason), route cards, checkpoint list, health pill, loading and error states. Vitest suite in `frontend/tests/` (`npm test`). Core check passed live in the browser (Denver → SLC: 3 routes, all checkpoints with risk + ETA, cards with the recommended route marked).
+- MapLibre 6 needs its worker URL set explicitly under Vite: see `frontend/src/map/maplibre.ts`.
+- `risk_engine/.env` must contain `RISK_ENGINE_TOKEN` matching `backend/.env`, or `/v1/evaluate` returns 401.
+- Local run configs: `.claude/launch.json` (risk-engine :5001, backend :8000, frontend :5173). `frontend/.env.local` copied from `.env.example`.
+- **Next: Chunk 4** (heatmap frames, deck.gl heatmap + 0–48 h slider, deployment).
 - One venv at repo root (`.venv`); run backend tests from `backend/`, risk engine tests from `risk_engine/`.
