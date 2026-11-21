@@ -163,6 +163,34 @@ class HeatmapResponse(_Strict):
         return self
 
 
+ALERT_MAX_POINTS = 100
+ALERT_SEVERITIES = ("Extreme", "Severe", "Moderate", "Minor", "Unknown")
+
+
+class AlertsRequest(_Strict):
+    """A5/B4: points sampled along the analysed routes (about every 50 mi)."""
+
+    points: list[LatLon] = Field(min_length=1, max_length=ALERT_MAX_POINTS)
+
+
+class Alert(_Strict):
+    """One NWS active alert. Informational only: never feeds a risk level or the ranking."""
+
+    id: str
+    event: str
+    severity: Literal["Extreme", "Severe", "Moderate", "Minor", "Unknown"]
+    headline: str | None
+    areas: str
+    onset: datetime | None
+    ends: datetime | None  # None = NWS gives no end ("until further notice")
+    point_index: int = Field(ge=0)  # first request point the alert covers
+
+
+class AlertsResponse(_Strict):
+    alerts: list[Alert]
+    coverage: Literal["US", "unsupported_region"]
+
+
 class ErrorDetail(BaseModel):
     code: str
     message: str

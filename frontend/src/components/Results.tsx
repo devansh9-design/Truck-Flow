@@ -1,13 +1,16 @@
+import type { ReactNode } from 'react'
 import type { AnalyzeResponse } from '../api/types'
 import { decidedByText } from '../lib/risk'
-import { useTimeFormatter, useUi } from '../store/ui'
+import { useTimeFormatter, useUi, useUnitFormat } from '../store/ui'
 import { CheckpointList } from './CheckpointList'
 import { RouteCard } from './RouteCards'
+import { SaveTripButton } from './SavedTrips'
 
-export function Results({ data }: { data: AnalyzeResponse }) {
+export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: ReactNode }) {
   const selectedId = useUi((s) => s.selectedRouteId)
   const { trip, routes, recommendation, notes } = data
   const formatTime = useTimeFormatter()
+  const u = useUnitFormat()
   const recommended = routes.find((r) => r.id === recommendation.route_id)
   const selected = routes.find((r) => r.id === selectedId) ?? recommended
 
@@ -19,9 +22,12 @@ export function Results({ data }: { data: AnalyzeResponse }) {
           <span className="sr-only">to</span> {trip.destination.label}
         </p>
         <p>
-          Departs {formatTime(trip.departure_time)} · {trip.load_weight_lb.toLocaleString('en-US')} lb · every{' '}
-          {trip.interval_mi} mi
+          Departs {formatTime(trip.departure_time)} · {u.weight(trip.load_weight_lb)} · checkpoint every{' '}
+          {trip.interval_mi} mi{u.units === 'metric' ? ` (${u.distance(trip.interval_mi, 0)})` : ''}
         </p>
+        <div className="mt-2">
+          <SaveTripButton data={data} />
+        </div>
       </section>
 
       {recommended && (
@@ -60,6 +66,8 @@ export function Results({ data }: { data: AnalyzeResponse }) {
           </ul>
         )}
       </section>
+
+      {alerts}
 
       {selected && <CheckpointList route={selected} />}
     </div>

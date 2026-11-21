@@ -36,7 +36,7 @@ jobs:
       - name: mypy (core modules)
         run: |
           cd backend && mypy --config-file ../mypy.ini routing scoring geo clients api && cd ..
-          cd risk_engine && mypy --config-file ../mypy.ini rules.py weather.py evaluate.py heatmap.py app.py
+          cd risk_engine && mypy --config-file ../mypy.ini rules.py weather.py evaluate.py heatmap.py alerts.py app.py
       - name: Shared schema tests
         run: cd shared && pytest -q
       - name: Risk engine tests (with coverage)

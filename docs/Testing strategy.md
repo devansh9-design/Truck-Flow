@@ -194,10 +194,18 @@ cd frontend && npm run lint
 - [x] All T1–T3 tests pass (locally; CI runs them on every push): backend 160, risk engine 173, shared 4, frontend 40. Logic coverage: backend 96%, risk engine 99%.
 - [x] T4 E2E passes locally: 7 Playwright tests (`frontend/e2e/`), API and map mocked from recorded fixtures.
 - [x] T5 numbers recorded in `docs/performance-results.md`; all targets met.
-- [x] Every T6 case behaves as listed (`backend/tests/test_edge_cases.py` + existing tests), except weather alerts, which are built in Upgrade 2 (P3-3).
+- [x] Every T6 case behaves as listed (`backend/tests/test_edge_cases.py` + existing tests); the non-US alerts case is covered in Upgrade 2 (`frontend/e2e/upgrade2.spec.ts`).
 - [x] axe scan clean of serious/critical issues (start and results screens).
 - [x] CI (I5) green on `main`: run 44722058645 (Python, Frontend, E2E + accessibility all passed).
 
 Notes from this pass:
 - T3 scenarios (`backend/tests/test_scenarios.py`) run Django and the **real Flask app** together with scripted weather, so the actual rules and load overrides decide every outcome.
-- Saved-trips and unit-conversion tests (§2.4, §5 item 4) wait for those Upgrade 2 features.
+- Saved-trips and unit-conversion tests (§2.4, §5 item 4) are in Upgrade 2 (below).
+
+## 12. Upgrade 2 (P3-1 to P3-4) checks
+
+- [x] P3-1 mobile: E2E at 360 × 740 with touch: bottom sheet (full → half after results → tap cycles), recommendation and slider in view, 40 px+ slider hit area, "Next hour" tap, no horizontal scroll, axe clean.
+- [x] P3-2 units: Vitest round trips mi↔km, mph↔km/h, in/hr↔mm/hr, formatting; Results and E2E check that switching changes numbers but not route order, recommendation, risk levels or checkpoint labels.
+- [x] P3-3 alerts: risk engine (`tests/test_alerts.py`, recorded NWS responses: a High Wind Warning, an empty answer, the out-of-bounds 400), Django pass-through + validation (`tests/test_alerts_api.py`), shared fixture contract test, Vitest sampling and panel states, E2E US list + map badge and the non-US message.
+- [x] P3-4 saved trips: Vitest add / list / delete / cap at 20 / corrupt storage / refused writes; E2E save → reload → listed → reopen re-runs the analysis with the resolved places → delete.
+- Totals after Upgrade 2: backend 172, risk engine 196, shared 5, frontend 71 (Vitest) + 12 (Playwright).

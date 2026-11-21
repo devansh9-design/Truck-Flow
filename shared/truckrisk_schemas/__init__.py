@@ -10,9 +10,14 @@ Units contract (every value on the wire):
 """
 
 from .models import (
+    ALERT_MAX_POINTS,
+    ALERT_SEVERITIES,
     HEATMAP_HOURS,
     HEATMAP_VARIABLES,
     RISK_SCORES,
+    Alert,
+    AlertsRequest,
+    AlertsResponse,
     CheckpointIn,
     CheckpointResult,
     ErrorBody,
@@ -39,6 +44,11 @@ from .units import (
 )
 
 __all__ = [
+    "ALERT_MAX_POINTS",
+    "ALERT_SEVERITIES",
+    "Alert",
+    "AlertsRequest",
+    "AlertsResponse",
     "HEATMAP_HOURS",
     "HEATMAP_VARIABLES",
     "RISK_SCORES",

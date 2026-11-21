@@ -1,10 +1,17 @@
 import { RISK_LEVELS } from '../api/types'
 import { riskStyle } from '../lib/risk'
 
-export function Legend() {
+/** Risk legend. `compact` (mobile) starts collapsed behind a small toggle. */
+export function Legend({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="pointer-events-auto rounded-lg bg-white/95 p-2.5 text-[11px] text-slate-700 shadow-md backdrop-blur">
-      <div className="mb-1 font-semibold text-slate-900">Risk level</div>
+    <details
+      key={compact ? 'compact' : 'full'}
+      open={!compact}
+      className="group pointer-events-auto rounded-lg bg-white/95 p-2.5 text-[11px] text-slate-700 shadow-md backdrop-blur"
+    >
+      <summary className="mb-1 cursor-pointer list-none font-semibold text-slate-900 group-not-open:mb-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50">
+        Risk level{compact && <span aria-hidden="true"> ▾</span>}
+      </summary>
       <ul className="space-y-0.5">
         {RISK_LEVELS.map((l) => {
           const s = riskStyle(l)
@@ -36,6 +43,6 @@ export function Legend() {
           Alternative
         </div>
       </div>
-    </div>
+    </details>
   )
 }

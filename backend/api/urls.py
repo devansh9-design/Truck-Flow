@@ -8,6 +8,7 @@ urlpatterns = [
     path("geocode", views.geocode_view, name="geocode"),
     path("analyze", views.analyze, name="analyze"),
     path("heatmap", views.heatmap, name="heatmap"),
+    path("alerts", views.alerts, name="alerts"),
     path("debug/routes", views.debug_routes, name="debug-routes"),
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("docs", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),

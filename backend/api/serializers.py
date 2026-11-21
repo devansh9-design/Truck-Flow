@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from routing.sampling import ALLOWED_INTERVALS_MI
-from truckrisk_schemas import Place
+from truckrisk_schemas import ALERT_MAX_POINTS, Place
 
 MAX_LOAD_LB = 100_000
 MIN_LOAD_LB = 1
@@ -155,3 +155,18 @@ class HeatmapQuerySerializer(serializers.Serializer):
         if value > now + timedelta(days=settings.FORECAST_HORIZON_DAYS):
             raise serializers.ValidationError("start is beyond the forecast horizon.")
         return value
+
+
+class AlertPointSerializer(serializers.Serializer):
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lon = serializers.FloatField(min_value=-180, max_value=180)
+
+
+class AlertsRequestSerializer(serializers.Serializer):
+    """A5: points sampled along the analysed routes (about every 50 mi, at most 100)."""
+
+    points = AlertPointSerializer(many=True, allow_empty=False, max_length=ALERT_MAX_POINTS,
+                                  error_messages={
+                                      "max_length": f"At most {ALERT_MAX_POINTS} points.",
+                                      "empty": "At least one point is required.",
+                                  })

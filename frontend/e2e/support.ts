@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 export const ANALYZE = JSON.parse(readFileSync(join(here, 'fixtures', 'analyze.json'), 'utf8'))
 export const HEATMAP = readFileSync(join(here, 'fixtures', 'heatmap.json'), 'utf8')
+// Shared fixture: one recorded NWS High Wind Warning at point 1 (shared/fixtures/alerts_response.json).
+export const ALERTS = JSON.parse(readFileSync(join(here, 'fixtures', 'alerts.json'), 'utf8'))
 
 const BLANK_STYLE = JSON.stringify({
   version: 8,
@@ -17,11 +19,13 @@ export interface Mocks {
   /** Every request the app made to the fake API host, in order. */
   apiCalls: Request[]
   analyzeStatus: number
+  /** Body for POST /api/alerts (P3-3). */
+  alerts: unknown
 }
 
 /** Answer the fake API and map hosts from fixtures. Change `analyzeStatus` to simulate errors. */
 export async function mockBackend(page: Page): Promise<Mocks> {
-  const mocks: Mocks = { apiCalls: [], analyzeStatus: 200 }
+  const mocks: Mocks = { apiCalls: [], analyzeStatus: 200, alerts: ALERTS }
   await page.route('http://tiles.test/**', (route) =>
     route.fulfill({ contentType: 'application/json', body: BLANK_STYLE }),
   )
@@ -45,6 +49,9 @@ export async function mockBackend(page: Page): Promise<Mocks> {
         })
       }
       return route.fulfill({ json: ANALYZE })
+    }
+    if (path === '/api/alerts') {
+      return route.fulfill({ json: mocks.alerts })
     }
     if (path === '/api/heatmap') {
       return route.fulfill({ contentType: 'application/json', body: HEATMAP })

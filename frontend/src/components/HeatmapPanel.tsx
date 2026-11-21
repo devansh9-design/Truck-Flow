@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { HeatmapVariable, Route } from '../api/types'
 import { colorAt, truckPosition, VARIABLE_ORDER, VARIABLES } from '../lib/heatmap'
-import { useTimeFormatter, useUi } from '../store/ui'
+import { useTimeFormatter, useUi, useUnitFormat } from '../store/ui'
 
 interface Props {
   times: string[] | undefined
@@ -13,6 +13,14 @@ interface Props {
 
 function LegendBar({ variable }: { variable: HeatmapVariable }) {
   const s = VARIABLES[variable]
+  const u = useUnitFormat()
+  // Ticks sit at the imperial rule thresholds; only their labels change with the unit toggle.
+  const tickText = (t: number) => {
+    if (!s.unit || u.units === 'imperial') return s.format(t)
+    const v = u.convert(t, s.unit)
+    return v >= 10 ? String(Math.round(v)) : v.toFixed(1)
+  }
+  const unitText = s.unit === 'mph' ? u.speedUnit : s.unit === 'in/hr' ? u.rateUnit : s.unit
   const stops = Array.from({ length: 33 }, (_, i) => {
     const [r, g, bl] = colorAt(s, (i / 32) * s.max)
     return `rgb(${r} ${g} ${bl}) ${(i / 32) * 100}%`
@@ -23,16 +31,42 @@ function LegendBar({ variable }: { variable: HeatmapVariable }) {
       <div className="relative mt-0.5 h-3 text-[10px] text-slate-500">
         {s.ticks.map((t) => (
           <span key={t} className="absolute -translate-x-1/2 tabular-nums" style={{ left: `${(t / s.max) * 100}%` }}>
-            {s.format(t)}
+            {tickText(t)}
           </span>
         ))}
-        {s.unit && <span className="absolute right-0">{s.unit}</span>}
+        {unitText && <span className="absolute right-0">{unitText}</span>}
       </div>
     </div>
   )
 }
 
 const PLAY_STEP_MS = 400
+
+/** One-hour steps: easier than dragging a thumb precisely on a phone (P3-1). */
+function StepButton({
+  dir,
+  hour,
+  disabled,
+  onStep,
+}: {
+  dir: 1 | -1
+  hour: number
+  disabled: boolean
+  onStep: (h: number) => void
+}) {
+  const target = hour + dir
+  return (
+    <button
+      type="button"
+      onClick={() => onStep(target)}
+      disabled={disabled || target < 0 || target > 48}
+      aria-label={dir > 0 ? 'Next hour' : 'Previous hour'}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-slate-700 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50 disabled:text-slate-300 pointer-coarse:h-10 pointer-coarse:w-10"
+    >
+      <span aria-hidden="true">{dir > 0 ? '›' : '‹'}</span>
+    </button>
+  )
+}
 
 export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
   const hour = useUi((s) => s.heatHour)
@@ -57,6 +91,11 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
     }, PLAY_STEP_MS)
     return () => window.clearInterval(t)
   }, [playing, setHour])
+
+  const stepTo = (h: number) => {
+    setPlaying(false)
+    setHour(h)
+  }
 
   const at = times?.[hour]
   const truck = route && at ? truckPosition(route, new Date(at).getTime()) : null
@@ -117,10 +156,11 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
               }}
               disabled={!ready}
               aria-label={playing ? 'Pause forecast animation' : 'Play forecast animation'}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-700 text-white hover:bg-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50 disabled:bg-slate-300"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-700 pointer-coarse:h-10 pointer-coarse:w-10 text-white hover:bg-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50 disabled:bg-slate-300"
             >
               <span aria-hidden="true">{playing ? '❚❚' : '▶'}</span>
             </button>
+            <StepButton dir={-1} hour={hour} disabled={!ready} onStep={stepTo} />
             <input
               type="range"
               min={0}
@@ -142,8 +182,9 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
               }}
               aria-label="Forecast hour after departure"
               aria-valuetext={at ? `${hour} hours after departure, ${formatTime(at)}` : `${hour} hours`}
-              className="h-2 w-full cursor-pointer accent-sky-700 disabled:cursor-wait"
+              className="touch-range w-full min-w-0 cursor-pointer disabled:cursor-wait"
             />
+            <StepButton dir={1} hour={hour} disabled={!ready} onStep={stepTo} />
           </div>
           <div className="mt-1 flex items-baseline justify-between gap-2">
             <span className="font-semibold tabular-nums text-slate-900">
