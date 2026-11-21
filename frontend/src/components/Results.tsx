@@ -4,6 +4,8 @@ import { decidedByText } from '../lib/risk'
 import { useTimeFormatter, useUi, useUnitFormat } from '../store/ui'
 import { CheckpointList } from './CheckpointList'
 import { RouteCard } from './RouteCards'
+import { useDriving } from '../store/driving'
+import { StartDrivingButton } from './Driving'
 import { SaveTripButton } from './SavedTrips'
 
 export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: ReactNode }) {
@@ -11,6 +13,7 @@ export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: Reac
   const { trip, routes, recommendation, notes } = data
   const formatTime = useTimeFormatter()
   const u = useUnitFormat()
+  const driving = useDriving((s) => s.active)
   const recommended = routes.find((r) => r.id === recommendation.route_id)
   const selected = routes.find((r) => r.id === selectedId) ?? recommended
 
@@ -25,9 +28,12 @@ export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: Reac
           Departs {formatTime(trip.departure_time)} · {u.weight(trip.load_weight_lb)} · checkpoint every{' '}
           {u.distance(trip.interval_mi, 0)}
         </p>
-        <div className="mt-2">
-          <SaveTripButton data={data} />
-        </div>
+        {/* While driving, the trip starts at "Current position": nothing worth saving. */}
+        {!driving && (
+          <div className="mt-2">
+            <SaveTripButton data={data} />
+          </div>
+        )}
       </section>
 
       {recommended && (
@@ -50,6 +56,8 @@ export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: Reac
           )}
         </section>
       )}
+
+      {selected && <StartDrivingButton data={data} route={selected} />}
 
       <section aria-labelledby="routes-heading" className="space-y-2">
         <h2 id="routes-heading" className="text-xs font-semibold tracking-wide text-slate-500 uppercase">

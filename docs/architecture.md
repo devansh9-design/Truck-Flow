@@ -74,6 +74,10 @@ Django → Flask `POST /v1/alerts` → NWS active alerts for points along the ro
 
 Guests: browser only (`localStorage`). Signed-in users: `GET/POST /api/trips`, stored in Postgres per user (max 20). Either way a saved trip holds the inputs plus a short summary; reopening re-runs the analysis so weather is always fresh. On sign-in, trips saved in the browser are moved into the account.
 
+### 2.6 Driving mode (phase 1, D17)
+
+Browser only; no new endpoint. "Start trip" watches the phone's GPS (`navigator.geolocation`), keeps the screen awake (Screen Wake Lock where supported) and calls `POST /api/analyze` with `origin = {label: "Current position", lat, lon}` and `departure_time = now`: on the first fix, every 15 min, and after 25 mi driven (at most every 5 min). The fresh result replaces the displayed analysis; the route being driven is the one overlapping the previous line most (`frontend/src/lib/driving.ts`). Warnings (`assess`) appear as a large dialog and are read aloud (`speechSynthesis`). The position is sent only as the analysis origin and is not stored.
+
 ### 2.5 Accounts — `/api/auth/*` (optional, D15)
 
 Sign-up / sign-in returns a bearer token (`Authorization: Bearer …`, ADR 013). Only its SHA-256 is stored; it expires 30 days after last use and is deleted on sign-out. Every endpoint accepts guests except `/api/auth/me*`, `/api/auth/logout`, `/api/auth/password` and `/api/trips*` (signed in) and `/api/admin/stats` (staff). Trip queries are always filtered by the requesting user, so another user's trip answers 404.

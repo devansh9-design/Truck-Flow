@@ -38,6 +38,8 @@ interface Props {
   alerts?: { points: AlertPoint[]; data: AlertsResponse | undefined }
   /** P3-1: px of map hidden under the mobile bottom sheet (kept clear when fitting routes). */
   bottomInset?: number
+  /** Driving mode: the truck's GPS position. */
+  you?: { lat: number; lon: number; accuracy: number } | null
 }
 
 function findCheckpoint(routes: Route[], id: string | null) {
@@ -49,7 +51,7 @@ function findCheckpoint(routes: Route[], id: string | null) {
   return null
 }
 
-export function MapView({ data, heat, alerts, bottomInset = 0 }: Props) {
+export function MapView({ data, heat, alerts, bottomInset = 0, you }: Props) {
   const mapRef = useRef<MapRef>(null)
   const selectedRouteId = useUi((s) => s.selectedRouteId)
   const selectedCheckpointId = useUi((s) => s.selectedCheckpointId)
@@ -285,6 +287,18 @@ export function MapView({ data, heat, alerts, bottomInset = 0 }: Props) {
       })}
 
       {selected && heat && <TruckMarker route={selected} times={heat.times} />}
+
+      {you && (
+        <Marker longitude={you.lon} latitude={you.lat} anchor="center" style={{ zIndex: 3 }}>
+          <div
+            role="img"
+            aria-label="Your current position"
+            title={`Your position (±${Math.round(you.accuracy)} m)`}
+            data-testid="you-marker"
+            className="h-5 w-5 rounded-full border-[3px] border-white bg-blue-600 shadow-[0_0_0_6px_rgb(37_99_235/0.25)]"
+          />
+        </Marker>
+      )}
 
       {alerts &&
         [...alertGroups.entries()].map(([i, list]) => {

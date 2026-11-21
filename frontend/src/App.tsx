@@ -3,6 +3,8 @@ import { ApiError } from './api/client'
 import { useAlerts, useAnalyze, useHeatmap } from './api/hooks'
 import type { AnalyzeRequest } from './api/types'
 import { useSessionCheck } from './api/account'
+import { useDrivingMonitor } from './api/driving'
+import { DrivingBar, DrivingWarningDialog } from './components/Driving'
 import { AccountMenu } from './components/Account'
 import { AlertsPanel } from './components/AlertsPanel'
 import { MOBILE_QUERY, useBottomSheet, useMediaQuery, type Snap } from './components/BottomSheet'
@@ -16,6 +18,7 @@ import { departureHasPassed, type SavedTrip } from './lib/savedTrips'
 import { UnitToggle } from './components/UnitToggle'
 import { Legend } from './map/Legend'
 import { MapView } from './map/MapView'
+import { useDriving } from './store/driving'
 import { useUi } from './store/ui'
 
 /** Seconds since `start` (ms), ticking while `start` is set. */
@@ -38,7 +41,12 @@ export default function App() {
   const [reopenNote, setReopenNote] = useState<string | null>(null)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const elapsed = useElapsed(analyze.isPending ? startedAt : null)
-  const data = analyze.isPending ? undefined : analyze.data
+  const baseData = analyze.isPending ? undefined : analyze.data
+  // Driving mode (D17): the latest re-check (from the truck's position) replaces the original.
+  useDrivingMonitor()
+  const liveData = useDriving((s) => (s.active ? s.liveData : null))
+  const position = useDriving((s) => (s.active ? s.position : null))
+  const data = liveData ?? baseData
   const heat = useHeatmap(data)
   const alerts = useAlerts(data)
   const selectedRouteId = useUi((s) => s.selectedRouteId)
@@ -66,7 +74,13 @@ export default function App() {
   const heatPanelPx = 176
   const mapBottomInset = isMobile ? sheet.height + (data ? heatPanelPx : 0) : 0
 
+  function endTrip() {
+    useDriving.getState().stop()
+    if (baseData) reset(baseData.recommendation.route_id)
+  }
+
   function submit(req: AnalyzeRequest) {
+    if (useDriving.getState().active) endTrip() // a new analysis ends driving mode
     setStartedAt(Date.now())
     setSnap('peek')
     analyze.mutate(req, {
@@ -140,6 +154,7 @@ export default function App() {
           </div>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+          <DrivingBar onEnd={endTrip} />
           <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
             <TripForm
               key={form.key}
@@ -209,6 +224,7 @@ export default function App() {
           heat={heat.data}
           alerts={{ points: alerts.points, data: alerts.data }}
           bottomInset={mapBottomInset}
+          you={position}
         />
         <div className="pointer-events-none absolute top-3 left-3">
           <Legend compact={isMobile} />
@@ -246,6 +262,7 @@ export default function App() {
           </div>
         )}
       </main>
+      <DrivingWarningDialog />
     </div>
   )
 }
