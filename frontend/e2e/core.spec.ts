@@ -141,11 +141,13 @@ test.describe('Accessibility (I4)', () => {
     await page.goto('/')
     await page.getByLabel('Origin', { exact: true }).focus()
     await page.keyboard.type('Denver, CO')
+    await page.keyboard.press('Tab') // destination's country filter
     await page.keyboard.press('Tab') // swap button
     await page.keyboard.press('Tab')
     await page.keyboard.type('Salt Lake City, UT')
     await page.keyboard.press('Enter')
     await expect(page.locator('[data-testid^="route-card-"]')).toHaveCount(3)
+    await expect(page.getByRole('listbox')).toHaveCount(0) // suggestions closed, not left over the results
     // Route cards are reachable and selectable with the keyboard.
     const card = page.locator('[data-testid^="route-card-"]').nth(1)
     await card.focus()

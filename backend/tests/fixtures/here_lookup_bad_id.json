@@ -1,0 +1,10 @@
+{
+ "status": 404,
+ "body": {
+  "status": 404,
+  "title": "Unknown Location ID",
+  "cause": "'here:cm:namedplace:000'",
+  "correlationId": "81ef15d6-ed9f-4e0d-bf42-b0fd2915be6c",
+  "requestId": "REQ-c3446234-f308-4ea4-bb1b-e38522ff139c"
+ }
+}

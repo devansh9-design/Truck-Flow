@@ -90,6 +90,8 @@ export default function App() {
       initial: {
         origin: t.origin.label,
         destination: t.destination.label,
+        originPlace: t.origin,
+        destinationPlace: t.destination,
         departure,
         load: String(t.load_weight_lb),
         interval: t.interval_mi,

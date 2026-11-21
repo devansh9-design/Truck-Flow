@@ -271,13 +271,29 @@ A trip has the same shape as the browser's saved trip: `{id, saved_at, origin: {
 
 `{users_total, signups_last_7_days, saved_trips_total, by_continent: {name: count}, by_country: [{code, name, users}]}`. 401 for guests, 403 for non-staff. Create a staff account with `python manage.py createsuperuser`.
 
+### A10. Place suggestions — `GET /api/places/suggest`, `GET /api/places/lookup`
+
+Search-as-you-type for the Origin and Destination fields (guests and users).
+
+`GET /api/places/suggest?q=<text, 1-120 chars>&country=<ISO alpha-2, optional>&near=<lat,lon, optional>`
+
+```json
+{ "suggestions": [ { "id": "here:cm:namedplace:20248573", "label": "Barcelona, Catalonia, Spain", "country": "ES" } ] }
+```
+
+Up to 5, best first. `country` restricts results to one country; `near` ranks results near a point (the app passes the chosen origin when searching the destination). Whole countries and regions are left out (they are not places to route to). Cached 24 h.
+
+`GET /api/places/lookup?id=<id from a suggestion>` returns `{label, lat, lon}`, which the app then sends to `/api/analyze` as the place, so it is not re-geocoded. Unknown id: 404 `PLACE_NOT_FOUND`; malformed id: 400.
+
+Provider: HERE Autocomplete (`/v1/autocomplete`, `in=countryCode:<alpha-3>`, `at`, `lang=en`) and Lookup (`/v1/lookup`), confirmed from recorded responses (`backend/tests/fixtures/here_autocomplete_*.json`, `here_lookup_*.json`, `scripts/probe_here_suggest.py`). Autocomplete was chosen because it ranks partial words best ("Barc" -> Barcelona); it returns no coordinates, hence the lookup on selection.
+
 ### Rate limits (D16)
 
 | Endpoints | Guest (per IP) | Signed in (per account) |
 |---|---|---|
 | `POST /api/analyze` | 30 / hour | 120 / hour |
 | `GET /api/heatmap`, `POST /api/alerts` | 60 / hour | 240 / hour |
-| `GET /api/geocode` | 60 / min | 120 / min |
+| `GET /api/geocode`, `/api/places/*` | 60 / min | 120 / min |
 | `/api/auth/signup`, `login`, `password` | 10 / min | 10 / min |
 | `/api/trips*` | n/a | 60 / min |
 
@@ -389,6 +405,7 @@ Contract tests (see `Testing strategy.md`) validate both services against these 
 | Provider | Endpoint | Used for | Key |
 |---|---|---|---|
 | HERE | Geocoding & Search v7 (`/geocode`) | Place → coordinates | `HERE_API_KEY` |
+| HERE | Autocomplete + Lookup v7 (`/autocomplete`, `/lookup`) | Suggestions while typing (A10) | `HERE_API_KEY` |
 | HERE | Routing v8 (`/routes`, `transportMode=truck`, `alternatives=5`, gross weight = load + `TRUCK_TARE_LB`, `return=polyline,summary`, `spans=length,duration,speedLimit`; speedLimit makes HERE split spans at each speed-limit change, which gives per-zone durations for ETAs) | Truck routes (CORE-1) | `HERE_API_KEY` |
 | Open-Meteo | `/v1/forecast` with `hourly=wind_speed_10m,rain,showers,snowfall`, `wind_speed_unit=mph`, `precipitation_unit=inch`, `forecast_days=16`, multiple coordinates per call | Forecasts (CORE-2, CORE-6) | none |
 | NWS | `api.weather.gov/alerts/active?point=lat,lon` (`User-Agent` header required) | Alerts (US) | none |

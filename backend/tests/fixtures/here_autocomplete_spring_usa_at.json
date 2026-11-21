@@ -1,0 +1,207 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "United States, NM, 87747, Springer",
+    "id": "here:cm:namedplace:21035787",
+    "language": "en",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Springer, NM, United States",
+     "countryCode": "USA",
+     "countryName": "United States",
+     "stateCode": "NM",
+     "state": "New Mexico",
+     "county": "Colfax",
+     "city": "Springer",
+     "postalCode": "87747"
+    },
+    "distance": 377299,
+    "highlights": {
+     "title": [
+      {
+       "start": 26,
+       "end": 32
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "United States, CO, 81073, Springfield",
+    "id": "here:cm:namedplace:21017106",
+    "language": "en",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Springfield, CO, United States",
+     "countryCode": "USA",
+     "countryName": "United States",
+     "stateCode": "CO",
+     "state": "Colorado",
+     "county": "Baca",
+     "city": "Springfield",
+     "postalCode": "81073"
+    },
+    "distance": 330848,
+    "highlights": {
+     "title": [
+      {
+       "start": 26,
+       "end": 32
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "United States, UT, 84663, Springville",
+    "id": "here:cm:namedplace:21035703",
+    "language": "en",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Springville, UT, United States",
+     "countryCode": "USA",
+     "countryName": "United States",
+     "stateCode": "UT",
+     "state": "Utah",
+     "county": "Utah",
+     "city": "Springville",
+     "postalCode": "84663"
+    },
+    "distance": 566190,
+    "highlights": {
+     "title": [
+      {
+       "start": 26,
+       "end": 32
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "United States, TX, 77373, Spring",
+    "id": "here:cm:namedplace:21016011",
+    "language": "en",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Spring, TX, United States",
+     "countryCode": "USA",
+     "countryName": "United States",
+     "stateCode": "TX",
+     "state": "Texas",
+     "county": "Harris",
+     "city": "Spring",
+     "postalCode": "77373"
+    },
+    "distance": 1381761,
+    "highlights": {
+     "title": [
+      {
+       "start": 26,
+       "end": 32
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "United States, UT, 84767, Springdale",
+    "id": "here:cm:namedplace:21035725",
+    "language": "en",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Springdale, UT, United States",
+     "countryCode": "USA",
+     "countryName": "United States",
+     "stateCode": "UT",
+     "state": "Utah",
+     "county": "Washington",
+     "city": "Springdale",
+     "postalCode": "84767"
+    },
+    "distance": 753015,
+    "highlights": {
+     "title": [
+      {
+       "start": 26,
+       "end": 32
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 6
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

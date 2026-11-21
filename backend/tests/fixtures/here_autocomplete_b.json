@@ -1,0 +1,164 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "Bharat",
+    "id": "here:cm:namedplace:22806254",
+    "language": "en",
+    "resultType": "administrativeArea",
+    "administrativeAreaType": "country",
+    "address": {
+     "label": "Bharat",
+     "countryCode": "IND",
+     "countryName": "Bharat"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 1
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ],
+      "country": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "BRA",
+    "id": "here:cm:namedplace:23028911",
+    "language": "en",
+    "resultType": "administrativeArea",
+    "administrativeAreaType": "country",
+    "address": {
+     "label": "Brazil",
+     "countryCode": "BRA",
+     "countryName": "Brazil"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 1
+      }
+     ],
+     "address": {
+      "label": [],
+      "countryCode": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "BEL",
+    "id": "here:cm:namedplace:20128886",
+    "language": "en",
+    "resultType": "administrativeArea",
+    "administrativeAreaType": "country",
+    "address": {
+     "label": "Belgium",
+     "countryCode": "BEL",
+     "countryName": "Belgium"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 1
+      }
+     ],
+     "address": {
+      "label": [],
+      "countryCode": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "BHR",
+    "id": "here:cm:namedplace:21420453",
+    "language": "en",
+    "resultType": "administrativeArea",
+    "administrativeAreaType": "country",
+    "address": {
+     "label": "Bahrain",
+     "countryCode": "BHR",
+     "countryName": "Bahrain"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 0,
+       "end": 1
+      }
+     ],
+     "address": {
+      "label": [],
+      "countryCode": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "Germany, Basse-Saxe",
+    "id": "here:cm:namedplace:20151542",
+    "language": "en",
+    "resultType": "administrativeArea",
+    "administrativeAreaType": "state",
+    "address": {
+     "label": "Basse-Saxe, Germany",
+     "countryCode": "DEU",
+     "countryName": "Germany",
+     "stateCode": "NI",
+     "state": "Basse-Saxe"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 9,
+       "end": 10
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ],
+      "state": [
+       {
+        "start": 0,
+        "end": 1
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

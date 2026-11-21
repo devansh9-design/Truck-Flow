@@ -171,3 +171,37 @@ class AlertsRequestSerializer(serializers.Serializer):
                                       "max_length": f"At most {ALERT_MAX_POINTS} points.",
                                       "empty": "At least one point is required.",
                                   })
+
+
+class PlaceSuggestQuerySerializer(serializers.Serializer):
+    """A10: `q` as typed (1+ characters), optional `country` (ISO alpha-2) and `near=lat,lon` bias."""
+
+    q = serializers.CharField(min_length=1, max_length=120, trim_whitespace=True)
+    country = serializers.CharField(required=False, allow_blank=True, max_length=2)
+    near = serializers.CharField(required=False, allow_blank=True, max_length=60)
+
+    def validate_country(self, value: str) -> str | None:
+        from accounts.countries import COUNTRIES
+
+        code = value.strip().upper()
+        if not code:
+            return None
+        if code not in COUNTRIES:
+            raise serializers.ValidationError("Unknown country code.")
+        return code
+
+    def validate_near(self, value: str) -> tuple[float, float] | None:
+        if not value.strip():
+            return None
+        try:
+            lat, lon = (float(v) for v in value.split(","))
+        except ValueError:
+            raise serializers.ValidationError("near must be lat,lon.") from None
+        if not (math.isfinite(lat) and math.isfinite(lon) and -90 <= lat <= 90 and -180 <= lon <= 180):
+            raise serializers.ValidationError("near must be lat,lon.")
+        return lat, lon
+
+
+class PlaceLookupQuerySerializer(serializers.Serializer):
+    id = serializers.RegexField(r"^here:[A-Za-z0-9:_\-.=]{1,300}$", max_length=310,
+                                error_messages={"invalid": "Unknown place id."})

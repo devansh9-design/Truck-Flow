@@ -1,0 +1,202 @@
+{
+ "status": 200,
+ "body": {
+  "items": [
+   {
+    "title": "Espanya, 08002, Barcelona",
+    "id": "here:cm:namedplace:20215774",
+    "language": "ca",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barcelona, Catalunya, Espanya",
+     "countryCode": "ESP",
+     "countryName": "Espanya",
+     "stateCode": "CT",
+     "state": "Catalunya",
+     "county": "Barcelona",
+     "city": "Barcelona",
+     "postalCode": "08002"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 16,
+       "end": 20
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "España, 39791, Bárcena de Cicero",
+    "id": "here:cm:namedplace:20280919",
+    "language": "es",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Bárcena de Cicero, Cantabria, España",
+     "countryCode": "ESP",
+     "countryName": "España",
+     "stateCode": "CB",
+     "state": "Cantabria",
+     "county": "Cantabria",
+     "city": "Bárcena de Cicero",
+     "postalCode": "39791"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 15,
+       "end": 19
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "España, 39420, Bárcena de Pie de Concha",
+    "id": "here:cm:namedplace:20280936",
+    "language": "es",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Bárcena de Pie de Concha, Cantabria, España",
+     "countryCode": "ESP",
+     "countryName": "España",
+     "stateCode": "CB",
+     "state": "Cantabria",
+     "county": "Cantabria",
+     "city": "Bárcena de Pie de Concha",
+     "postalCode": "39420"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 15,
+       "end": 19
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "España, 16118, Barchín del Hoyo",
+    "id": "here:cm:namedplace:20294350",
+    "language": "es",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Barchín del Hoyo, Castilla-La Mancha, España",
+     "countryCode": "ESP",
+     "countryName": "España",
+     "stateCode": "CM",
+     "state": "Castilla-La Mancha",
+     "county": "Cuenca",
+     "city": "Barchín del Hoyo",
+     "postalCode": "16118"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 15,
+       "end": 19
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   },
+   {
+    "title": "España, 22148, Bárcabo",
+    "id": "here:cm:namedplace:20276206",
+    "language": "es",
+    "resultType": "locality",
+    "localityType": "city",
+    "address": {
+     "label": "Bárcabo, Aragón, España",
+     "countryCode": "ESP",
+     "countryName": "España",
+     "stateCode": "AR",
+     "state": "Aragón",
+     "county": "Huesca",
+     "city": "Bárcabo",
+     "postalCode": "22148"
+    },
+    "highlights": {
+     "title": [
+      {
+       "start": 15,
+       "end": 19
+      }
+     ],
+     "address": {
+      "label": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ],
+      "city": [
+       {
+        "start": 0,
+        "end": 4
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

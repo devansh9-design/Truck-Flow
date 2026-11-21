@@ -64,6 +64,7 @@ The app generates multiple route options, evaluates the weather along each one a
 | FR-I | Basic weather alerts along the route (US National Weather Service active alerts). **Informational only:** alerts never change a risk level or the ranking. |
 | FR-J | Saved trips: in the browser (localStorage) for guests, on the server for signed-in users. |
 | FR-K | Optional user accounts (added after Upgrade 2, D15): sign up with name, email, password and country (continent derived from it); sign in / out; edit profile, change password, delete account. Guests keep full use of the app. Staff can see user counts by country and continent. Accounts never change a core result. |
+| FR-L | Place suggestions while typing (from the first letter) with an optional country filter per field; signed-in users default to their profile country. Picking a suggestion fixes exact coordinates; free text still works. |
 
 ## 4. Non-functional requirements
 

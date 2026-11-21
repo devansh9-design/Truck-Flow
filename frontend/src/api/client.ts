@@ -8,6 +8,8 @@ import type {
   CountriesResponse,
   Health,
   HeatmapResponse,
+  Place,
+  PlaceSuggestion,
   Session,
   User,
 } from './types'
@@ -114,3 +116,14 @@ export const removeServerTrip = (id: string) => getJson<null>(`/api/trips/${enco
 
 export const importTrips = (trips: SavedTrip[]) =>
   getJson<{ trips: SavedTrip[] }>('/api/trips/import', json('POST', { trips: trips.map(tripInput) }))
+
+// --- Place suggestions (A10) --------------------------------------------------------------
+
+export function suggestPlaces(q: string, country: string, near: string) {
+  const p = new URLSearchParams({ q })
+  if (country) p.set('country', country)
+  if (near) p.set('near', near)
+  return getJson<{ suggestions: PlaceSuggestion[] }>(`/api/places/suggest?${p}`)
+}
+
+export const lookupPlace = (id: string) => getJson<Place>(`/api/places/lookup?${new URLSearchParams({ id })}`)

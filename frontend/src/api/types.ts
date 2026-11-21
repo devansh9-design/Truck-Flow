@@ -162,3 +162,12 @@ export interface CountriesResponse {
   continents: string[]
   countries: Country[]
 }
+
+// A10: place suggestions while typing (HERE Autocomplete; coordinates via lookup).
+export interface PlaceSuggestion {
+  /** HERE place id, passed to /api/places/lookup */
+  id: string
+  label: string
+  /** ISO alpha-2, or '' when unknown */
+  country: string
+}

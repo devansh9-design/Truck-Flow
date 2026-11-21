@@ -1,13 +1,18 @@
 import { useState, type FormEvent } from 'react'
-import { INTERVALS, type AnalyzeRequest, type Interval } from '../api/types'
+import { INTERVALS, type AnalyzeRequest, type Interval, type Place } from '../api/types'
 import { browserTimeZone, nextHourInput, TRIP_TIME_ZONES, zonedInputToIso } from '../lib/format'
 import { validateTrip, type FieldErrors } from '../lib/validate'
 import { loadInputText, loadInputToLb, LOAD_MAX_KG, LOAD_MAX_LB, miToKm, type LoadInput } from '../lib/units'
+import { useAuth } from '../store/auth'
 import { useUi, useUnitFormat } from '../store/ui'
+import { PlaceInput } from './PlaceInput'
 
 export interface TripFormValues {
   origin: string
   destination: string
+  /** Exact places (e.g. a reopened saved trip): sent as coordinates, not re-geocoded. */
+  originPlace?: Place | null
+  destinationPlace?: Place | null
   /** datetime-local value, read in the trip time zone */
   departure: string
   /** pounds */
@@ -47,6 +52,12 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
 export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
   const [origin, setOrigin] = useState(initial?.origin ?? '')
   const [destination, setDestination] = useState(initial?.destination ?? '')
+  const [originPlace, setOriginPlace] = useState<Place | null>(initial?.originPlace ?? null)
+  const [destinationPlace, setDestinationPlace] = useState<Place | null>(initial?.destinationPlace ?? null)
+  // Country filter per field: null follows the signed-in user's country (or "any" for guests).
+  const profileCountry = useAuth((s) => s.user?.country ?? '')
+  const [originCountry, setOriginCountry] = useState<string | null>(null)
+  const [destinationCountry, setDestinationCountry] = useState<string | null>(null)
   const timeZone = useUi((s) => s.timeZone)
   const setTimeZone = useUi((s) => s.setTimeZone)
   const [departure, setDeparture] = useState(() => initial?.departure ?? nextHourInput(timeZone))
@@ -68,8 +79,8 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
     setErrors(e)
     if (Object.keys(e).length) return
     onSubmit({
-      origin: origin.trim(),
-      destination: destination.trim(),
+      origin: originPlace ?? origin.trim(),
+      destination: destinationPlace ?? destination.trim(),
       departure_time: zonedInputToIso(departure, timeZone),
       load_weight_lb: loadInputToLb(loadInput),
       interval_mi: interval,
@@ -79,32 +90,40 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
   const swap = () => {
     setOrigin(destination)
     setDestination(origin)
+    setOriginPlace(destinationPlace)
+    setDestinationPlace(originPlace)
+    setOriginCountry(destinationCountry)
+    setDestinationCountry(originCountry)
   }
 
   return (
     <form onSubmit={submit} noValidate aria-label="Trip details" className="space-y-3">
       <div className="relative space-y-3">
-        <div>
-          <label htmlFor="origin" className="mb-1 block text-xs font-medium text-slate-700">
-            Origin
-          </label>
-          <input
-            id="origin"
-            className={inputCls}
-            placeholder="e.g. Denver, CO"
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-            aria-invalid={!!errorFor('origin')}
-            aria-describedby={errorFor('origin') ? 'origin-err' : undefined}
-            autoComplete="off"
-          />
-          <FieldError id="origin-err" msg={errorFor('origin')} />
-        </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="destination" className="block text-xs font-medium text-slate-700">
-              Destination
-            </label>
+        <PlaceInput
+          id="origin"
+          label="Origin"
+          placeholder="Start typing, e.g. Denver"
+          text={origin}
+          place={originPlace}
+          onText={setOrigin}
+          onPlace={setOriginPlace}
+          country={originCountry ?? profileCountry}
+          onCountry={setOriginCountry}
+          error={errorFor('origin')}
+        />
+        <PlaceInput
+          id="destination"
+          label="Destination"
+          placeholder="Start typing, e.g. Salt Lake City"
+          text={destination}
+          place={destinationPlace}
+          onText={setDestination}
+          onPlace={setDestinationPlace}
+          country={destinationCountry ?? profileCountry}
+          onCountry={setDestinationCountry}
+          near={originPlace}
+          error={errorFor('destination')}
+          action={
             <button
               type="button"
               onClick={swap}
@@ -113,19 +132,8 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
             >
               ⇅ Swap
             </button>
-          </div>
-          <input
-            id="destination"
-            className={inputCls}
-            placeholder="e.g. Salt Lake City, UT"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            aria-invalid={!!errorFor('destination')}
-            aria-describedby={errorFor('destination') ? 'destination-err' : undefined}
-            autoComplete="off"
-          />
-          <FieldError id="destination-err" msg={errorFor('destination')} />
-        </div>
+          }
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
