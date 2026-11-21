@@ -2,10 +2,11 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AlertsResponse, WeatherAlert } from '../src/api/types'
 import { AlertsPanel } from '../src/components/AlertsPanel'
 import { Results } from '../src/components/Results'
+import { TripForm } from '../src/components/TripForm'
 import { alertPoints, alertsByPoint, pointsAlong, topSeverity } from '../src/lib/alerts'
 import {
   addTrip,
@@ -19,7 +20,19 @@ import {
   type SavedTrip,
 } from '../src/lib/savedTrips'
 import { haversineMi } from '../src/lib/segments'
-import { inHrToMmHr, kmhToMph, kmToMi, lbToKg, miToKm, mmHrToInHr, mphToKmh, unitFormat } from '../src/lib/units'
+import {
+  inHrToMmHr,
+  kmhToMph,
+  kmToMi,
+  lbToKg,
+  loadInputText,
+  loadInputToLb,
+  miToKm,
+  mmHrToInHr,
+  mphToKmh,
+  unitFormat,
+} from '../src/lib/units'
+import { validateTrip } from '../src/lib/validate'
 import { useUi } from '../src/store/ui'
 import { ANALYZE } from './fixtures'
 
@@ -79,6 +92,55 @@ describe('P3-2 toggle never changes a core result', () => {
     useUi.getState().setUnits('metric')
     expect(localStorage.getItem('truckrisk.units')).toBe('metric')
     useUi.getState().setUnits('imperial')
+  })
+})
+
+describe('P3-2 trip form follows the unit toggle', () => {
+  beforeEach(() => useUi.getState().setUnits('imperial'))
+
+  it('converts a typed load for display without changing the weight sent', () => {
+    const lb = { text: '42001', units: 'imperial' as const }
+    expect(loadInputText(lb, 'metric')).toBe('19051')
+    expect(loadInputText(lb, 'imperial')).toBe('42001')
+    expect(loadInputToLb(lb)).toBe(42001)
+    expect(loadInputToLb({ text: '19051', units: 'metric' })).toBe(42000)
+    expect(loadInputToLb({ text: '', units: 'metric' })).toBeNaN()
+  })
+
+  it('validates the load in the unit it is typed in', () => {
+    const ok = { origin: 'Denver', destination: 'Boise', departure: '2099-01-01T10:00', timeZone: 'UTC' }
+    expect(validateTrip({ ...ok, load: '45359', units: 'metric' }).load_weight_lb).toBeUndefined()
+    expect(validateTrip({ ...ok, load: '45360', units: 'metric' }).load_weight_lb).toMatch(/45,359 kg/)
+    expect(validateTrip({ ...ok, load: '0', units: 'metric' }).load_weight_lb).toMatch(/kg/)
+  })
+
+  it('shows kg and km in metric and still sends pounds and miles', async () => {
+    const onSubmit = vi.fn()
+    render(<TripForm busy={false} onSubmit={onSubmit} />)
+    expect(screen.getByLabelText('Load weight (lb)')).toHaveValue(42000)
+    expect(screen.getByLabelText('25 mi')).toBeChecked()
+
+    act(() => useUi.getState().setUnits('metric'))
+    expect(screen.getByLabelText('Load weight (kg)')).toHaveValue(19051)
+    expect(screen.getByLabelText('40 km')).toBeChecked()
+    expect(screen.getByLabelText('16 km')).toBeInTheDocument()
+    expect(screen.getByLabelText('80 km')).toBeInTheDocument()
+    expect(screen.queryByText(/ mi$/)).toBeNull()
+
+    await userEvent.type(screen.getByLabelText('Origin'), 'Denver')
+    await userEvent.type(screen.getByLabelText('Destination'), 'Boise')
+    await userEvent.click(screen.getByLabelText('80 km'))
+    await userEvent.click(screen.getByRole('button', { name: 'Compare routes' }))
+    // Untouched load: the original 42,000 lb is sent, not a value rounded through kg.
+    expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({ load_weight_lb: 42000, interval_mi: 50 }))
+
+    await userEvent.clear(screen.getByLabelText('Load weight (kg)'))
+    await userEvent.type(screen.getByLabelText('Load weight (kg)'), '20000')
+    await userEvent.click(screen.getByRole('button', { name: 'Compare routes' }))
+    expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({ load_weight_lb: 44092 }))
+
+    act(() => useUi.getState().setUnits('imperial'))
+    expect(screen.getByLabelText('Load weight (lb)')).toHaveValue(44092)
   })
 })
 

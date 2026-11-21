@@ -23,7 +23,7 @@ export function Results({ data, alerts }: { data: AnalyzeResponse; alerts?: Reac
         </p>
         <p>
           Departs {formatTime(trip.departure_time)} · {u.weight(trip.load_weight_lb)} · checkpoint every{' '}
-          {trip.interval_mi} mi{u.units === 'metric' ? ` (${u.distance(trip.interval_mi, 0)})` : ''}
+          {u.distance(trip.interval_mi, 0)}
         </p>
         <div className="mt-2">
           <SaveTripButton data={data} />
