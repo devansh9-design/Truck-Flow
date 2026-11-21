@@ -93,3 +93,13 @@ def test_malformed_heatmap_from_risk_engine_is_rejected():
     respx.post(f"{RISK_URL}/v1/heatmap").mock(return_value=httpx.Response(200, json=bad))
     r = _get()
     assert r.status_code == 502 and r.json()["error"]["code"] == "UPSTREAM_ERROR"
+
+
+@freeze_time(NOW)
+@respx.mock
+def test_large_json_responses_are_gzipped_when_the_client_accepts_it():
+    respx.post(f"{RISK_URL}/v1/heatmap").mock(return_value=_fixture())
+    r = APIClient().get("/api/heatmap", PARAMS, HTTP_ACCEPT_ENCODING="gzip")
+    assert r.status_code == 200
+    assert r["Content-Encoding"] == "gzip"
+    assert len(r.content) < len((SHARED / "heatmap_response.json").read_bytes())

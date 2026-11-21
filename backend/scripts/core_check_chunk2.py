@@ -72,7 +72,8 @@ def main() -> int:
     print(f"  ranking order follows (no_travel, severe, high, avg, duration): {sorted_ok}")
     for n in d["notes"]:
         print(f"  note: {n}")
-    print(f"\n{'PASS' if ok else 'FAIL'}: 3 ranked routes, ETA-hour weather + risk + reason on every checkpoint")
+    verdict = "PASS" if ok else "FAIL"
+    print(f"\n{verdict}: 3 ranked routes, ETA-hour weather + risk + reason on every checkpoint")
     return 0 if ok else 1
 
 

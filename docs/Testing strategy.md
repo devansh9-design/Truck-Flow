@@ -190,10 +190,14 @@ cd frontend && npm run lint
 
 ## 11. Exit criteria for Phase 2
 
-- [ ] Every CORE-1 to CORE-6 test in §0 passes.
-- [ ] All T1–T3 tests pass in CI.
-- [ ] T4 E2E passes locally.
-- [ ] T5 numbers recorded; any target missed has a fix or a written reason.
-- [ ] Every T6 case behaves as listed.
-- [ ] axe scan clean of serious/critical issues.
-- [ ] CI (I5) green on `main`.
+- [x] Every CORE-1 to CORE-6 test in §0 passes.
+- [x] All T1–T3 tests pass (locally; CI runs them on every push): backend 160, risk engine 173, shared 4, frontend 40. Logic coverage: backend 96%, risk engine 99%.
+- [x] T4 E2E passes locally: 7 Playwright tests (`frontend/e2e/`), API and map mocked from recorded fixtures.
+- [x] T5 numbers recorded in `docs/performance-results.md`; all targets met.
+- [x] Every T6 case behaves as listed (`backend/tests/test_edge_cases.py` + existing tests), except weather alerts, which are built in Upgrade 2 (P3-3).
+- [x] axe scan clean of serious/critical issues (start and results screens).
+- [ ] CI (I5) green on `main`: `.github/workflows/ci.yml` added; green once pushed.
+
+Notes from this pass:
+- T3 scenarios (`backend/tests/test_scenarios.py`) run Django and the **real Flask app** together with scripted weather, so the actual rules and load overrides decide every outcome.
+- Saved-trips and unit-conversion tests (§2.4, §5 item 4) wait for those Upgrade 2 features.

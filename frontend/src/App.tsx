@@ -33,6 +33,9 @@ export default function App() {
   const err = analyze.error instanceof ApiError ? analyze.error : null
   const serverField = err?.field ? { field: err.field, message: err.message } : null
 
+  // Outages and timeouts are worth retrying as-is; input problems (4xx) are not.
+  const retryable = !!err && (err.status === 0 || err.status >= 500)
+
   function submit(req: AnalyzeRequest) {
     setStartedAt(Date.now())
     analyze.mutate(req, { onSuccess: (res) => reset(res.recommendation.route_id) })
@@ -57,6 +60,15 @@ export default function App() {
             <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
               <p className="font-semibold">Couldn't analyze this trip</p>
               <p className="mt-0.5 text-xs">{analyze.error.message}</p>
+              {retryable && analyze.variables && (
+                <button
+                  type="button"
+                  onClick={() => submit(analyze.variables!)}
+                  className="mt-2 rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-900 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                >
+                  Try again
+                </button>
+              )}
             </div>
           )}
 
@@ -65,8 +77,7 @@ export default function App() {
           {!data && !analyze.isPending && !analyze.isError && (
             <p className="px-1 text-xs text-slate-500">
               Enter a trip to compare three truck routes. Each checkpoint is checked against the forecast for the hour
-              the truck is due there, then routes are ranked by No Travel, Severe and High miles, average risk and
-              time.
+              the truck is due there, then routes are ranked by No Travel, Severe and High miles, average risk and time.
             </p>
           )}
         </div>

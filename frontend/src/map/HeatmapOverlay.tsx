@@ -49,5 +49,7 @@ export function HeatmapOverlay({ heat }: { heat: HeatmapResponse }) {
   // Overlaid (deck.gl's own canvas), not interleaved: @deck.gl/mapbox 9.4's interleaved
   // renderer reads map.transform, which MapLibre 6 no longer exposes. Route markers are
   // DOM elements and stay above; the semi-transparent heatmap sits over the line layers.
-  return <DeckOverlay layers={[layer]} />
+  // The heatmap must never take the map down with it (e.g. no WebGL context available):
+  // deck.gl reports the failure here and the routes and checkpoints carry on.
+  return <DeckOverlay layers={[layer]} onError={(e) => console.warn('Heatmap could not render:', e.message)} />
 }

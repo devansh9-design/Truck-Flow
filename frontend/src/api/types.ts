@@ -69,14 +69,7 @@ export interface Route {
   warnings: string[]
 }
 
-export type DecidedBy =
-  | 'no_travel_mi'
-  | 'severe_mi'
-  | 'high_mi'
-  | 'avg_risk'
-  | 'duration_s'
-  | 'tie'
-  | 'only_route'
+export type DecidedBy = 'no_travel_mi' | 'severe_mi' | 'high_mi' | 'avg_risk' | 'duration_s' | 'tie' | 'only_route'
 
 export interface AnalyzeRequest {
   origin: string | Place

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { RISK_LEVELS, type DecidedBy } from '../src/api/types'
-import { formatDuration, formatMiles, formatTime, nextHourInput, zonedInputToIso, zoneOffsetMinutes } from '../src/lib/format'
+import {
+  formatDuration,
+  formatMiles,
+  formatTime,
+  nextHourInput,
+  zonedInputToIso,
+  zoneOffsetMinutes,
+} from '../src/lib/format'
 import { decidedByText, RISK_STYLE, riskColorExpression } from '../src/lib/risk'
 import { riskSegments, cumulativeMiles, haversineMi } from '../src/lib/segments'
 import { validateTrip } from '../src/lib/validate'
@@ -97,8 +104,9 @@ describe('trip validation', () => {
     expect(validateTrip({ ...ok, departure: '2026-11-20T11:00' }, now).departure_time).toBeUndefined()
     expect(validateTrip({ ...ok, departure: '2026-11-20T10:59' }, now).departure_time).toBeDefined()
     // Same wall time read in Denver (UTC-7) is 17:59Z: fine.
-    expect(validateTrip({ ...ok, departure: '2026-11-20T10:59', timeZone: 'America/Denver' }, now).departure_time)
-      .toBeUndefined()
+    expect(
+      validateTrip({ ...ok, departure: '2026-11-20T10:59', timeZone: 'America/Denver' }, now).departure_time,
+    ).toBeUndefined()
   })
 })
 
@@ -128,5 +136,21 @@ describe('risk segments', () => {
     expect(segs[0].geometry.coordinates[0]).toEqual(coords[0])
     const last = segs[segs.length - 1].geometry.coordinates
     expect(last[last.length - 1][0]).toBeCloseTo(coords[coords.length - 1][0], 6)
+  })
+})
+
+describe('risk badge contrast (WCAG AA, small text)', () => {
+  const lum = (hex: string) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    const [r, g, b] = c.map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const ratio = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+
+  it.each(RISK_LEVELS)('%s label text is at least 4.5:1 on its badge colour', (level) => {
+    expect(ratio(RISK_STYLE[level].color, RISK_STYLE[level].text)).toBeGreaterThanOrEqual(4.5)
   })
 })
