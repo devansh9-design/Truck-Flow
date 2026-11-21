@@ -25,7 +25,7 @@ No AI service is called **at runtime**. The deployed app uses only HERE, Open-Me
 | Code | Writes all application code and tests | Reads diffs, runs locally |
 | Running & verifying | Cannot run against live APIs from its workspace | Runs services, tests and real trips; reports output |
 | Secrets | Never sees or handles real API keys | Creates keys; sets env vars locally and on hosts |
-| Deployment | Writes configs and step-by-step instructions | Performs the deploy on Vercel and Render |
+| Deployment | Writes configs and instructions; for the release, created the Render and Vercel resources through the developer's connected accounts | Signs in, enters every secret (HERE key, internal token) and approves each step |
 | Walkthrough | Writes the Loom script | Records the Loom |
 
 ## 3. Workflow per feature
@@ -90,7 +90,7 @@ AI output is treated as untrusted until it passes these checks:
 
 ## 7. Known limitations of the AI workflow
 
-- Claude's workspace cannot reach HERE, Open-Meteo or NWS, so live-API behaviour is verified by the developer.
+- During development Claude's workspace could not reach HERE, Open-Meteo or NWS, so live-API behaviour was verified by the developer. For the release, Claude ran the live core checks against the deployed API.
 - Package installs may be disabled in the Claude workspace; in that case tests run on the developer's machine.
 - AI knowledge can lag provider changes; provider docs win over AI memory whenever they disagree.
 

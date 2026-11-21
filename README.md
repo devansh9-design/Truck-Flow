@@ -4,7 +4,7 @@ Plan a truck trip and see which route is safest in the weather the truck will ac
 
 Enter an origin, destination, departure time and load. The app finds three truck routes, places checkpoints along each one, and looks up the forecast for the hour the truck reaches each checkpoint. It rates every checkpoint Low, Moderate, High, Severe or No Travel, then ranks the routes, safest first. A heatmap with a 0–48 h slider shows how the weather moves along the corridor after departure.
 
-**Live app:** _not deployed yet; see [Deploy](#deploy)._
+**Live app:** [truck-flow-psi.vercel.app](https://truck-flow-psi.vercel.app). The free servers sleep when idle, so the first load can take about a minute.
 
 ## Features
 
@@ -29,7 +29,7 @@ Enter an origin, destination, departure time and load. The app finds three truck
   - follows the phone's GPS;
   - re-checks the road ahead every 15 min, or sooner after 25 mi driven;
   - warns on screen and by voice when weather makes another route safer.
- 
+
 ## Judgement calls
 
 Where the brief is ambiguous, we chose as follows. The full reasoning is in [docs/projects specification.md](docs/projects%20specification.md) §5–6.
@@ -53,12 +53,22 @@ Where the brief is ambiguous, we chose as follows. The full reasoning is in [doc
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    A["Website<br/>(React)"] --> B["API<br/>(Django)"]
+    B --> C["Risk engine<br/>(Flask)"]
+    B --> D["HERE<br/>routes"]
+    C --> R["Weather relay<br/>(Vercel)"]
+    R --> E["Open-Meteo<br/>weather"]
+    B --> F[("Database<br/>accounts")]
 ```
-React (Vite)  ──►  Django + DRF  /api/*  ──►  Flask risk engine  /v1/*  (internal, token)
-                    │  HERE geocoding, routing, autocomplete       │  risk rules, Open-Meteo,
-                    │  checkpoints, ETAs, scoring, ranking         │  heatmap frames, NWS alerts
-                    │  accounts + saved trips (Postgres/SQLite)
-```
+
+1. The **website** collects the trip and shows routes, risk and the heatmap.
+2. The **API** finds three truck routes on HERE and places checkpoints along each.
+3. The **risk engine** gets the weather for each checkpoint and rates it, Low to No Travel.
+4. The **API** ranks the routes, safest first, and sends them back.
+
+The risk engine is private: only the API can call it.
 
 | Folder | What it is |
 | --- | --- |
@@ -149,7 +159,7 @@ None of these call HERE, Open-Meteo or NWS: tests replay recorded provider respo
 ## Deploy
 
 - **Backend:** the API, the risk engine and Postgres deploy to Render from [`render.yaml`](render.yaml). Django runs its migrations on start.
-- **Frontend:** deploys to Vercel with the project root set to `frontend`.
+- **Frontend:** deploys to Vercel with the project root set to `frontend`. The same Vercel project hosts `frontend/api/open-meteo.ts`, a small relay that forwards the risk engine's weather requests: Render's shared free IPs are over Open-Meteo's per-IP daily limit.
 
 Follow [docs/deployment.md](docs/deployment.md) step by step: secrets, CORS, the staff account, checking `NUM_PROXIES`, and the live core checks.
 
