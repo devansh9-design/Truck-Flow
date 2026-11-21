@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+frontend/test-results/
+frontend/playwright-report/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
