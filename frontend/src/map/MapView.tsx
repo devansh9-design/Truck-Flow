@@ -11,11 +11,13 @@ import {
   type MapLayerMouseEvent,
   type MapRef,
 } from 'react-map-gl/maplibre'
-import type { AnalyzeResponse, Route } from '../api/types'
+import type { AnalyzeResponse, HeatmapResponse, Route } from '../api/types'
 import { CheckpointDetails } from '../components/CheckpointDetails'
 import { maplibregl } from './maplibre'
 import { riskColorExpression, riskStyle } from '../lib/risk'
+import { truckPosition } from '../lib/heatmap'
 import { riskSegments } from '../lib/segments'
+import { HeatmapOverlay } from './HeatmapOverlay'
 import { useTimeFormatter, useUi } from '../store/ui'
 
 const STYLE_URL = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty'
@@ -27,6 +29,7 @@ const ALTERNATE_COLOR = '#64748b'
 
 interface Props {
   data: AnalyzeResponse | undefined
+  heat?: HeatmapResponse
 }
 
 function findCheckpoint(routes: Route[], id: string | null) {
@@ -38,7 +41,7 @@ function findCheckpoint(routes: Route[], id: string | null) {
   return null
 }
 
-export function MapView({ data }: Props) {
+export function MapView({ data, heat }: Props) {
   const mapRef = useRef<MapRef>(null)
   const selectedRouteId = useUi((s) => s.selectedRouteId)
   const selectedCheckpointId = useUi((s) => s.selectedCheckpointId)
@@ -135,7 +138,9 @@ export function MapView({ data }: Props) {
       attributionControl={{ compact: true }}
     >
       <NavigationControl position="top-right" showCompass={false} />
-      <ScaleControl position="bottom-right" unit="imperial" />
+      <ScaleControl position="top-right" unit="imperial" />
+
+      {heat && <HeatmapOverlay heat={heat} />}
 
       <Source id="routes" type="geojson" data={routeLines}>
         {/* Alternates: grey; the recommended route keeps a blue dashed line when not selected. */}
@@ -235,6 +240,8 @@ export function MapView({ data }: Props) {
         )
       })}
 
+      {selected && heat && <TruckMarker route={selected} times={heat.times} />}
+
       {activeCp && (
         <Popup
           longitude={activeCp.cp.lon}
@@ -249,5 +256,28 @@ export function MapView({ data }: Props) {
         </Popup>
       )}
     </Map>
+  )
+}
+
+/**
+ * Where the truck on the selected route is at the slider hour (from checkpoint ETAs).
+ * Subscribes to the hour itself so scrubbing re-renders only this marker, not the map.
+ */
+function TruckMarker({ route, times }: { route: Route; times: string[] }) {
+  const hour = useUi((s) => s.heatHour)
+  const at = times[hour]
+  if (!at) return null
+  const p = truckPosition(route, new Date(at).getTime())
+  return (
+    <Marker longitude={p.lon} latitude={p.lat} anchor="center" style={{ zIndex: 2 }}>
+      <div
+        role="img"
+        aria-label={`Truck on ${route.label} at the selected forecast hour`}
+        title="Truck position at the selected hour"
+        className="pointer-events-none flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-base shadow-lg"
+      >
+        <span aria-hidden="true">🚚</span>
+      </div>
+    </Marker>
   )
 }

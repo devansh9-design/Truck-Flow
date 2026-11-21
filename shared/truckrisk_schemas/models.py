@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class RiskLevel(StrEnum):
@@ -96,6 +96,71 @@ class CheckpointResult(_Strict):
 class EvaluateResponse(_Strict):
     results: list[CheckpointResult]
     meta: dict[str, Any]
+
+
+# --- Heatmap (A4 / B3, CORE-6) -------------------------------------------------
+
+HEATMAP_HOURS = 49  # slider hours 0..48; hour 0 = departure hour (D14)
+HEATMAP_VARIABLES = ("risk", "wind_mph", "rain_in_hr", "snow_in_hr")
+
+
+class HeatmapRequest(_Strict):
+    bbox: list[float] = Field(min_length=4, max_length=4)  # minLon, minLat, maxLon, maxLat
+    start: datetime
+    hours: Literal[49] = HEATMAP_HOURS
+    load_weight_lb: float = Field(gt=0, le=100_000)
+    max_cells: int = Field(default=256, ge=16, le=400)
+
+    _tz = field_validator("start")(_require_tz)
+
+    @field_validator("bbox")
+    @classmethod
+    def _bbox(cls, v: list[float]) -> list[float]:
+        min_lon, min_lat, max_lon, max_lat = v
+        if not (-180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90):
+            raise ValueError("bbox must be minLon,minLat,maxLon,maxLat with min < max")
+        return v
+
+
+class HeatmapGrid(_Strict):
+    rows: int = Field(ge=1)
+    cols: int = Field(ge=1)
+    lats: list[float]  # cell-centre latitude of each row, south to north
+    lons: list[float]  # cell-centre longitude of each column, west to east
+
+
+class HeatmapResponse(_Strict):
+    """49 frames per variable; each frame is rows x cols values, row-major.
+
+    A value is null where the forecast has no usable data for that cell and hour
+    (never replaced by zero or by Low risk).
+    """
+
+    grid: HeatmapGrid
+    times: list[datetime]
+    hours: int
+    variables: dict[str, list[list[float | None]]]
+    source: str
+    generated_at: datetime
+
+    @field_validator("variables")
+    @classmethod
+    def _names(cls, v: dict) -> dict:
+        if set(v) != set(HEATMAP_VARIABLES):
+            raise ValueError(f"variables must be exactly {HEATMAP_VARIABLES}")
+        return v
+
+    @model_validator(mode="after")
+    def _shape(self) -> HeatmapResponse:
+        g = self.grid
+        if len(g.lats) != g.rows or len(g.lons) != g.cols:
+            raise ValueError("grid lats/lons do not match rows/cols")
+        if not (self.hours == len(self.times) == HEATMAP_HOURS):
+            raise ValueError(f"a heatmap has exactly {HEATMAP_HOURS} hourly frames")
+        for name, frames in self.variables.items():
+            if len(frames) != self.hours or any(len(f) != g.rows * g.cols for f in frames):
+                raise ValueError(f"{name}: every frame must have rows x cols values")
+        return self
 
 
 class ErrorDetail(BaseModel):

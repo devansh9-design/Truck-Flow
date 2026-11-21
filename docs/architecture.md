@@ -61,8 +61,9 @@ sequenceDiagram
 
 1. After the analysis returns, React requests the heatmap for the **corridor bbox** (all routes, buffered 25 mi) starting at the departure hour.
 2. Django forwards to Flask `POST /v1/heatmap`.
-3. Flask builds a grid (≈ 12 × 12 to 16 × 16 cells), fetches **49 hourly frames (0–48 h)** in batched Open-Meteo calls, classifies each cell per hour, caches the result and returns compact arrays.
-4. React keeps all frames in memory. The slider changes only the frame index, and deck.gl's `HeatmapLayer` re-renders on the GPU. **No network calls while scrubbing.**
+3. Flask buffers the bbox by 25 mi, builds a grid of at most 256 cells shaped to be roughly square in miles (e.g. 12 × 21 for Denver → Salt Lake City), fetches **49 hourly frames (0–48 h)** through the same Open-Meteo client and cache as `/v1/evaluate`, classifies each cell per hour with `rules.py`, caches the result and returns compact arrays. A cell/hour without usable data is `null`, never zero or Low.
+4. React keeps all frames in memory and pre-renders each frame of the chosen variable as a tiny image (one pixel per cell). The slider only swaps which image deck.gl's `BitmapLayer` shows; GPU linear filtering turns the grid into a smooth field with exact values at cell centres. **No network calls while scrubbing** (measured: 0 requests over 98 slider steps, ~7 ms per step).
+5. A truck marker shows where the selected route's truck is at the slider hour (interpolated from checkpoint ETAs).
 
 ### 2.3 Alerts — `POST /api/alerts` (non-core)
 
@@ -91,7 +92,7 @@ truck-routing/
 │   ├── src/
 │   │   ├── api/              # typed API client + TanStack Query hooks
 │   │   ├── components/       # TripForm, RouteCards, CheckpointPopup, Slider, AlertsPanel…
-│   │   ├── map/              # MapView, route layers, markers, HeatmapLayer
+│   │   ├── map/              # MapView, route layers, markers, HeatmapOverlay (BitmapLayer)
 │   │   ├── store/            # Zustand: selection, slider hour, units, saved trips
 │   │   └── lib/              # units conversion, risk colours, formatting
 │   └── tests/                # Vitest + Playwright
@@ -166,6 +167,8 @@ Render's free services sleep when idle; the frontend calls `/api/health` on load
 | 004 | Flask stays internal behind Django | One public origin, simpler CORS, secrets isolated |
 | 005 | No database or Redis | Not required by the spec; fewer moving parts to deploy |
 | 006 | MapLibre + deck.gl | WebGL rendering for routes, markers and a 49-frame heatmap |
+| 010 | Heatmap drawn with deck.gl `BitmapLayer` (one pixel per grid cell, linear filtering), not `HeatmapLayer` | `HeatmapLayer` estimates point *density*: its kernel spread is ~8% of `radiusPixels` (capped at 100 px), so a ~256-cell corridor grid renders as separate dots. A gridded forecast is a field; a filtered bitmap shows it continuously with exact cell values. |
+| 011 | deck.gl overlaid (own canvas), not interleaved | `@deck.gl/mapbox` 9.4's interleaved renderer reads `map.transform`, which MapLibre 6 no longer exposes. Route markers are DOM elements and stay on top. |
 | 007 | Conservative segment attribution (worse endpoint) | Safety-first reading of "Severe miles" |
 | 008 | Severe and No Travel miles kept separate; fewest No Travel miles ranked first, then the spec's four keys | The spec doesn't say how No Travel ranks; this stops an impassable route from winning without reordering the spec's keys |
 | 009 | Router gets gross weight (load + configurable tare); rules use load as entered | The router needs total vehicle weight; the spec's load rules refer to the load |

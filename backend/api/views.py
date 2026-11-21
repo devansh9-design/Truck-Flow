@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from clients import risk_engine
 from geo.geocode import geocode
 
-from .serializers import GeocodeQuerySerializer, TripRequestSerializer
+from .serializers import GeocodeQuerySerializer, HeatmapQuerySerializer, TripRequestSerializer
 from .services import analyze_trip, iso_z, plan_trip
 
 
@@ -55,3 +55,13 @@ def analyze(request: Request) -> Response:
     ser = TripRequestSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
     return Response(analyze_trip(ser.validated_data))
+
+
+@api_view(["GET"])
+def heatmap(request: Request) -> HttpResponse:
+    """A4 (CORE-6): all 49 frames for the corridor in one response; the slider never refetches."""
+    ser = HeatmapQuerySerializer(data=request.query_params)
+    ser.is_valid(raise_exception=True)
+    v = ser.validated_data
+    body = risk_engine.heatmap(v["bbox"], v["start"], v["load_weight_lb"])
+    return HttpResponse(body, content_type="application/json")

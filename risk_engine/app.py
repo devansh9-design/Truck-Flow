@@ -16,11 +16,13 @@ from typing import Any
 from dotenv import load_dotenv
 from evaluate import BeyondHorizon, evaluate_checkpoints
 from flask import Flask, jsonify, request
+from heatmap import build_heatmap
+from heatmap import to_json as heatmap_json
 from pydantic import ValidationError
 from weather import OpenMeteoProvider, WeatherUpstreamError
 from werkzeug.exceptions import HTTPException
 
-from truckrisk_schemas import EvaluateRequest
+from truckrisk_schemas import EvaluateRequest, HeatmapRequest
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 log = logging.getLogger(__name__)
@@ -99,6 +101,26 @@ def create_app(config: dict | None = None) -> Flask:
                 return error(504, "UPSTREAM_TIMEOUT", str(exc))
             return error(502, "UPSTREAM_ERROR", str(exc))
         return app.response_class(resp.model_dump_json(), mimetype="application/json")
+
+    @app.post("/v1/heatmap")
+    @require_token
+    def v1_heatmap():
+        body = request.get_json(silent=True)
+        if body is None:
+            return error(400, "VALIDATION_ERROR", "Request body must be JSON.")
+        try:
+            req = HeatmapRequest.model_validate(body)
+        except ValidationError as exc:
+            first = exc.errors()[0]
+            field = ".".join(str(p) for p in first["loc"]) or "body"
+            return error(400, "VALIDATION_ERROR", f"{field}: {first['msg']}", {"field": field})
+        try:
+            resp = build_heatmap(req, app.config["FORECAST_PROVIDER"])
+        except WeatherUpstreamError as exc:
+            if exc.timeout:
+                return error(504, "UPSTREAM_TIMEOUT", str(exc))
+            return error(502, "UPSTREAM_ERROR", str(exc))
+        return app.response_class(heatmap_json(resp), mimetype="application/json")
 
     @app.errorhandler(HTTPException)
     def handle_http(exc: HTTPException):

@@ -10,6 +10,8 @@ Units contract (every value on the wire):
 """
 
 from .models import (
+    HEATMAP_HOURS,
+    HEATMAP_VARIABLES,
     RISK_SCORES,
     CheckpointIn,
     CheckpointResult,
@@ -17,6 +19,9 @@ from .models import (
     ErrorDetail,
     EvaluateRequest,
     EvaluateResponse,
+    HeatmapGrid,
+    HeatmapRequest,
+    HeatmapResponse,
     LatLon,
     Place,
     Risk,
@@ -34,6 +39,8 @@ from .units import (
 )
 
 __all__ = [
+    "HEATMAP_HOURS",
+    "HEATMAP_VARIABLES",
     "RISK_SCORES",
     "KG_PER_LB",
     "METERS_PER_MILE",
@@ -43,6 +50,9 @@ __all__ = [
     "ErrorDetail",
     "EvaluateRequest",
     "EvaluateResponse",
+    "HeatmapGrid",
+    "HeatmapRequest",
+    "HeatmapResponse",
     "LatLon",
     "Place",
     "Risk",

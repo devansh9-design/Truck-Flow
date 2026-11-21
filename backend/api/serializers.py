@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from datetime import UTC, datetime, timedelta
 
 from django.conf import settings
@@ -112,3 +113,45 @@ class GeocodeQuerySerializer(serializers.Serializer):
             "blank": "Search text must be 2-200 characters.",
         },
     )
+
+
+MAX_BBOX_LON_SPAN = 60.0  # coast to coast in the US is ~58 deg
+MAX_BBOX_LAT_SPAN = 30.0
+
+
+class HeatmapQuerySerializer(serializers.Serializer):
+    """A4: `bbox` from corridor.bbox, `start` = departure hour (slider hour 0), load."""
+
+    bbox = serializers.CharField()
+    start = IsoDateTimeWithOffset()
+    load_weight_lb = serializers.FloatField(
+        min_value=MIN_LOAD_LB,
+        max_value=MAX_LOAD_LB,
+        error_messages={
+            "min_value": "Load weight must be between 1 and 100,000 lb.",
+            "max_value": "Load weight must be between 1 and 100,000 lb.",
+        },
+    )
+
+    def validate_bbox(self, value: str) -> list[float]:
+        try:
+            parts = [float(p) for p in value.split(",")]
+        except ValueError:
+            parts = []
+        if len(parts) != 4 or not all(math.isfinite(p) for p in parts):
+            raise serializers.ValidationError("bbox must be minLon,minLat,maxLon,maxLat.")
+        min_lon, min_lat, max_lon, max_lat = parts
+        if not (-180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90):
+            raise serializers.ValidationError("bbox must be minLon,minLat,maxLon,maxLat with min < max.")
+        if max_lon - min_lon > MAX_BBOX_LON_SPAN or max_lat - min_lat > MAX_BBOX_LAT_SPAN:
+            raise serializers.ValidationError("bbox is too large for a trip corridor.")
+        return parts
+
+    def validate_start(self, value: datetime) -> datetime:
+        now = timezone.now()
+        # Hour 0 is the departure hour rounded down, so allow one more hour of slack.
+        if value < now - PAST_TOLERANCE - timedelta(hours=1):
+            raise serializers.ValidationError("start cannot be more than 2 hours in the past.")
+        if value > now + timedelta(days=settings.FORECAST_HORIZON_DAYS):
+            raise serializers.ValidationError("start is beyond the forecast horizon.")
+        return value
