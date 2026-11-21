@@ -23,7 +23,9 @@ centre is requested; a location's whole series is cached for 30 minutes.
 
 from __future__ import annotations
 
+import itertools
 import logging
+import math
 import threading
 import time
 from collections.abc import Iterable, Sequence
@@ -55,9 +57,23 @@ Cell = tuple[int, int]  # (round(lat*10), round(lon*10))
 
 
 class WeatherUpstreamError(Exception):
+    """Open-Meteo failed or sent data we cannot use (Django maps it to 502/504)."""
+
     def __init__(self, message: str, *, timeout: bool = False):
         super().__init__(message)
         self.timeout = timeout
+
+
+class IncompleteWeather(WeatherUpstreamError):
+    """An hour inside the forecast range is missing or has a null value (C4).
+
+    Distinct from BeyondForecast: the forecast does reach this hour, the provider
+    just did not deliver usable numbers for it. Never treated as calm weather.
+    """
+
+
+class BeyondForecast(Exception):
+    """The requested hour is later than the last forecast hour (422)."""
 
 
 def cell_of(lat: float, lon: float) -> Cell:
@@ -77,15 +93,26 @@ class Series:
     def last_hour(self) -> datetime:
         return datetime.fromtimestamp(max(self.index), UTC)
 
-    def at(self, hour: datetime) -> Weather | None:
-        """Weather for that exact UTC hour, or None if the forecast doesn't cover it."""
-        i = self.index.get(int(hour.timestamp()))
+    def at(self, hour: datetime) -> Weather:
+        """Weather for that exact UTC hour.
+
+        Raises BeyondForecast when the hour is after the last forecast hour, and
+        IncompleteWeather when the hour is inside the range but missing or null.
+        """
+        ts = int(hour.timestamp())
+        when = f"{datetime.fromtimestamp(ts, UTC):%Y-%m-%d %H:00} UTC"
+        if ts > max(self.index):
+            raise BeyondForecast()
+        i = self.index.get(ts)
         if i is None:
-            return None
-        w, r, s = self.wind_mph[i], self.rain_in_hr[i], self.snow_in_hr[i]
-        if w is None or r is None or s is None:
-            return None
-        return Weather(wind_mph=w, rain_in_hr=r, snow_in_hr=s)
+            raise IncompleteWeather(f"Open-Meteo returned no data for {when}.")
+        values = {"wind": self.wind_mph[i], "rain/showers": self.rain_in_hr[i],
+                  "snowfall": self.snow_in_hr[i]}
+        missing = [k for k, v in values.items() if v is None]
+        if missing:
+            raise IncompleteWeather(f"Open-Meteo returned no {', '.join(missing)} value for {when}.")
+        return Weather(wind_mph=self.wind_mph[i], rain_in_hr=self.rain_in_hr[i],
+                       snow_in_hr=self.snow_in_hr[i])
 
 
 class ForecastProvider(Protocol):
@@ -99,23 +126,59 @@ def _factor(table: dict[str, float], unit: str | None, var: str) -> float:
     return table[unit]
 
 
-def parse_location(obj: dict) -> Series:
-    """Turn one Open-Meteo location object into a Series (explicit unit conversion, D10)."""
-    units = obj.get("hourly_units") or {}
-    hourly = obj.get("hourly") or {}
+def _bad(msg: str) -> WeatherUpstreamError:
+    return WeatherUpstreamError(f"Open-Meteo returned malformed data: {msg}.")
+
+
+def _is_number(v: object) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _values(hourly: dict, var: str, n: int) -> list[float | None]:
+    """One hourly array: same length as `time`; each entry null or a finite number >= 0.
+
+    Nulls are kept (C4 reports them only if a checkpoint needs that hour); anything
+    else that is not a usable measurement rejects the whole response (C5).
+    """
+    arr = hourly.get(var)
+    if not isinstance(arr, list):
+        raise _bad(f"hourly.{var} is missing")
+    if len(arr) != n:
+        raise _bad(f"hourly.{var} has {len(arr)} values for {n} hours")
+    for v in arr:
+        if v is None:
+            continue
+        if not _is_number(v) or not math.isfinite(v) or v < 0:
+            raise _bad(f"hourly.{var} contains {v!r}")
+    return arr
+
+
+def parse_location(obj: object) -> Series:
+    """Validate one Open-Meteo location object and turn it into a Series (D10, C5)."""
+    if not isinstance(obj, dict):
+        raise _bad("a location is not an object")
+    units = obj.get("hourly_units")
+    hourly = obj.get("hourly")
+    if not isinstance(units, dict) or not isinstance(hourly, dict):
+        raise _bad("hourly data or units are missing")
     times = hourly.get("time")
-    if not times or units.get("time") != "unixtime":
+    if units.get("time") != "unixtime" or not isinstance(times, list) or not times:
         raise WeatherUpstreamError("Open-Meteo returned no hourly times.")
+    if not all(_is_number(t) and math.isfinite(t) and t == int(t) for t in times):
+        raise _bad("hourly.time contains invalid timestamps")
+    stamps = [int(t) for t in times]
+    if any(b <= a for a, b in itertools.pairwise(stamps)):
+        raise _bad("hourly.time is not strictly increasing")
+
     kw = _factor(WIND_TO_MPH, units.get("wind_speed_10m"), "wind_speed_10m")
     kr = _factor(PRECIP_TO_IN, units.get("rain"), "rain")
     ks = _factor(PRECIP_TO_IN, units.get("showers"), "showers")
     kn = _factor(PRECIP_TO_IN, units.get("snowfall"), "snowfall")
-    try:
-        wind, rain, showers, snow = (
-            hourly["wind_speed_10m"], hourly["rain"], hourly["showers"], hourly["snowfall"]
-        )
-    except KeyError as exc:
-        raise WeatherUpstreamError(f"Open-Meteo response is missing {exc.args[0]}.") from None
+    n = len(stamps)
+    wind = _values(hourly, "wind_speed_10m", n)
+    rain = _values(hourly, "rain", n)
+    showers = _values(hourly, "showers", n)
+    snow = _values(hourly, "snowfall", n)
 
     def scale(v, k):
         return None if v is None else v * k
@@ -124,7 +187,7 @@ def parse_location(obj: dict) -> Series:
         return None if r is None or s is None else r * kr + s * ks
 
     return Series(
-        index={int(t): i for i, t in enumerate(times)},
+        index={t: i for i, t in enumerate(stamps)},
         wind_mph=[scale(v, kw) for v in wind],
         rain_in_hr=[liquid(r, s) for r, s in zip(rain, showers, strict=True)],
         snow_in_hr=[scale(v, kn) for v in snow],
@@ -173,7 +236,12 @@ class OpenMeteoProvider:
             "timeformat": "unixtime",
         }
         payload = self._get(params)
-        objs = payload if isinstance(payload, list) else [payload]
+        if isinstance(payload, dict):
+            objs = [payload]
+        elif isinstance(payload, list):
+            objs = payload
+        else:
+            raise _bad("the response is not a JSON object or list")
         if len(objs) != len(cells):
             raise WeatherUpstreamError("Open-Meteo returned the wrong number of locations.")
         return {c: parse_location(o) for c, o in zip(cells, objs, strict=True)}

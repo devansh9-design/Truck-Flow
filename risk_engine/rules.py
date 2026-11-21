@@ -32,8 +32,14 @@ LOAD_SEVERE_LB = 40_000  # strictly greater than
 
 
 def _check(name: str, value: float) -> float:
-    if value is None or isinstance(value, bool) or math.isnan(value) or value < 0:
-        raise ValueError(f"{name} must be a non-negative number, got {value!r}")
+    # isfinite rejects NaN and both infinities: +inf must never classify as No Travel.
+    if (
+        not isinstance(value, (int, float))
+        or isinstance(value, bool)
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValueError(f"{name} must be a finite, non-negative number, got {value!r}")
     return float(value)
 
 

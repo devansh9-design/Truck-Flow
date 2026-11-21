@@ -160,8 +160,8 @@ The spec leaves these points open. Each decision is fixed here, implemented once
 | D3 | "Severe miles" vs "No Travel miles" | Kept **separate**. Severe miles = sum of segment lengths classed Severe only. No Travel miles = sum of segment lengths classed No Travel. Both are reported for every route. |
 | D4 | How No Travel affects ranking | The spec's keys don't mention No Travel, but ignoring it would let a route with No Travel miles and 0 Severe miles beat a route with only Severe miles. So **fewest No Travel miles** is ranked first (key 0), followed by the spec's four keys in their original order. Any route with No Travel miles also shows a prominent "No Travel conditions" warning, including the recommended route when every option has them. |
 | D5 | Average risk | Distance-weighted mean of segment scores (1–5). |
-| D6 | Ties | Compare miles rounded to 0.1 mi and average risk to 0.01, so floating-point noise never decides a ranking. |
-| D7 | ETA at a checkpoint | Departure time + cumulative router travel time to that point (from the router's per-segment durations), rounded to the **nearest forecast hour**. |
+| D6 | Ties | Compare miles rounded to 0.1 mi and average risk to 0.01, so floating-point noise never decides a ranking. Travel time, the last key, is compared exactly as the router reports it (HERE gives whole seconds), with no rounding. |
+| D7 | ETA at a checkpoint | Departure time + cumulative router travel time to that point (from the router's per-segment durations), rounded to the **nearest forecast hour**. HERE gives a duration per speed-limit span, not per coordinate, so inside a span the time is spread by distance: checkpoint ETAs are an informed approximation (exact at span boundaries), not provider timestamps. |
 | D8 | Wind speed | Sustained `wind_speed_10m`, not gusts (the spec says "speed"). |
 | D9 | Rain | `rain + showers` (liquid) in in/hr; snowfall is classified separately. |
 | D10 | Snow units | Converted explicitly to inches/hour from whatever unit the provider reports. |

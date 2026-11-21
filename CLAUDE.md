@@ -55,5 +55,6 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 - MapLibre 6 needs its worker URL set explicitly under Vite: see `frontend/src/map/maplibre.ts`.
 - `risk_engine/.env` must contain `RISK_ENGINE_TOKEN` matching `backend/.env`, or `/v1/evaluate` returns 401.
 - Local run configs: `.claude/launch.json` (risk-engine :5001, backend :8000, frontend :5173). `frontend/.env.local` copied from `.env.example`.
+- Review corrections C1–C6 done (Chunk 1–2 review): HERE errors classified (only `noRouteFound` → NO_ROUTE; 429/4xx → UPSTREAM_ERROR, 429 not retried; shapes recorded in `backend/tests/fixtures/here_no_route.json`, `here_bad_request.json` via `scripts/probe_here_errors.py`); overlap measured in metres (100 m tolerance, exact point-to-segment distance); via fallback budget 6 attempts with honest notes; incomplete Open-Meteo data → 502, separate from BEYOND_FORECAST_HORIZON; payload + finite-value validation; duration tie-breaker unrounded. HERE's docs site blocks automated fetches: confirm provider shapes from recorded responses instead.
 - **Next: Chunk 4** (heatmap frames, deck.gl heatmap + 0–48 h slider, deployment).
 - One venv at repo root (`.venv`); run backend tests from `backend/`, risk engine tests from `risk_engine/`.

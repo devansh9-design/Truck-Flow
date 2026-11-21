@@ -76,12 +76,12 @@ Browser only. The trip inputs plus a short result summary are stored in `localSt
 
 | Step | Where | Method |
 |---|---|---|
-| Three routes (CORE-1) | `backend/geo/routes.py` | Request up to 5 HERE alternatives; drop near-duplicates (> 90% shared length); keep the 3 fastest distinct routes; if fewer than 3, add via-point detours either side of the midpoint. |
+| Three routes (CORE-1) | `backend/geo/routes.py`, `routing/overlap.py` | Request up to 5 HERE alternatives; drop near-duplicates (> 90% of the shorter route within 100 m of the other, measured in metres); keep the 3 fastest distinct routes; if fewer than 3, try up to 6 via-point detours either side of the midpoint and record the attempts in `notes`. |
 | Checkpoint sampling | `backend/routing/sampling.py` | Decode polyline → project to an equal-distance CRS (Shapely + pyproj) or walk with haversine → cut every N miles. Origin and destination are always checkpoints. |
-| ETA per checkpoint | `backend/routing/sampling.py` | Cumulative router duration interpolated along each section by distance → `departure + elapsed` → round to nearest hour. |
+| ETA per checkpoint | `backend/routing/track.py`, `sampling.py` | HERE duration per speed-limit span, spread over that span by distance (an approximation inside each span, exact at its ends) → cumulative elapsed time → `departure + elapsed` → round to nearest hour. |
 | Risk classification | `risk_engine/rules.py` | Pure functions; half-open intervals; `max()` of factors + load override. |
 | Route scoring | `backend/scoring/score.py` | Segments between checkpoints; segment level = worse endpoint; sum miles per level, with Severe and No Travel miles kept separate (D3); distance-weighted average. |
-| Ranking (CORE-4) | `backend/scoring/rank.py` | Sort key `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)` with D6 rounding: our safety key first (D4), then the spec's four keys in order. Rank 1 is recommended; routes with No Travel miles carry a warning. |
+| Ranking (CORE-4) | `backend/scoring/rank.py` | Sort key `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)` with D6 rounding (travel time unrounded): our safety key first (D4), then the spec's four keys in order. Rank 1 is recommended; routes with No Travel miles carry a warning. |
 
 ## 4. Repository layout
 

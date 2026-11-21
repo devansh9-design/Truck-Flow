@@ -1,0 +1,11 @@
+{
+  "status": 400,
+  "body": {
+    "title": "Malformed request",
+    "status": 400,
+    "code": "E605001",
+    "cause": "Error while parsing request:\n  Invalid value for parameter 'transportMode' at 'spaceship'\n  Invalid transport mode at 'spaceship'",
+    "action": "",
+    "correlationId": "c7b614b6-a4e0-49dd-a4d3-058739bbe945"
+  }
+}

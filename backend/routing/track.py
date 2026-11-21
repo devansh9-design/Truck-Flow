@@ -12,6 +12,10 @@ How the per-vertex time is built (spec D7, architecture §3):
   duration, and step distances are scaled so they add up to the section's
   summary length. The router's road distance and time are authoritative; the
   polyline only says *where* along the road a mile or second falls.
+
+Accuracy: HERE does not time individual coordinates. Spreading a span's time
+by distance makes checkpoint ETAs an informed approximation inside each span
+(exact at span boundaries), not provider-supplied timestamps (review note).
 """
 
 from __future__ import annotations
