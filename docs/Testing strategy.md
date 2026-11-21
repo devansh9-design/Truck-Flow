@@ -196,7 +196,7 @@ cd frontend && npm run lint
 - [x] T5 numbers recorded in `docs/performance-results.md`; all targets met.
 - [x] Every T6 case behaves as listed (`backend/tests/test_edge_cases.py` + existing tests), except weather alerts, which are built in Upgrade 2 (P3-3).
 - [x] axe scan clean of serious/critical issues (start and results screens).
-- [ ] CI (I5) green on `main`: `.github/workflows/ci.yml` added; green once pushed.
+- [x] CI (I5) green on `main`: run 44722058645 (Python, Frontend, E2E + accessibility all passed).
 
 Notes from this pass:
 - T3 scenarios (`backend/tests/test_scenarios.py`) run Django and the **real Flask app** together with scripted weather, so the actual rules and load overrides decide every outcome.
