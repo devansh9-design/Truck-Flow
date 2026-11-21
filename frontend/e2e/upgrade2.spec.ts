@@ -63,15 +63,19 @@ test.describe('P3-2 unit toggle', () => {
     const card = page.getByTestId(`route-card-${recommended.id}`)
     await expect(card).toContainText(' mi')
 
-    await page.getByRole('radio', { name: 'km' }).click()
+    await page.getByRole('radio', { name: 'km', exact: true }).click()
     await expect(card).toContainText(' km')
     await expect(card).not.toContainText(/\d mi\b/)
+    // The form and trip summary switch too: load in kg, checkpoint spacing in km.
+    await expect(page.getByLabel('Load weight (kg)')).toHaveValue('19051')
+    await expect(page.getByLabel('40 km')).toBeChecked()
+    await expect(page.locator('section[aria-label="Trip"]')).not.toContainText(/\d (mi|lb)\b/)
     expect(await order()).toEqual(before.order)
     expect(await page.getByTestId('recommendation').innerText()).toBe(before.rec)
     expect(await markers()).toEqual(before.markers)
 
     await page.reload()
-    await expect(page.getByRole('radio', { name: 'km' })).toHaveAttribute('aria-checked', 'true')
+    await expect(page.getByRole('radio', { name: 'km', exact: true })).toHaveAttribute('aria-checked', 'true')
   })
 })
 

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { INTERVALS, type AnalyzeRequest, type Interval } from '../api/types'
 import { browserTimeZone, nextHourInput, TRIP_TIME_ZONES, zonedInputToIso } from '../lib/format'
 import { validateTrip, type FieldErrors } from '../lib/validate'
+import { loadInputText, loadInputToLb, LOAD_MAX_KG, LOAD_MAX_LB, miToKm, type LoadInput } from '../lib/units'
 import { useUi, useUnitFormat } from '../store/ui'
 
 export interface TripFormValues {
@@ -9,6 +10,7 @@ export interface TripFormValues {
   destination: string
   /** datetime-local value, read in the trip time zone */
   departure: string
+  /** pounds */
   load: string
   interval: Interval
 }
@@ -48,25 +50,28 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
   const timeZone = useUi((s) => s.timeZone)
   const setTimeZone = useUi((s) => s.setTimeZone)
   const [departure, setDeparture] = useState(() => initial?.departure ?? nextHourInput(timeZone))
-  const [load, setLoad] = useState(initial?.load ?? '42000')
+  // Kept in the units it was typed in; shown converted, so toggling never alters the weight.
+  const [loadInput, setLoadInput] = useState<LoadInput>({ text: initial?.load ?? '42000', units: 'imperial' })
   const [interval, setIntervalMi] = useState<Interval>(initial?.interval ?? 25)
   // A reopened trip may use a zone that is not in the list on this device.
   const zones = baseZones.some((z) => z.id === timeZone) ? baseZones : [{ id: timeZone, label: timeZone }, ...baseZones]
   const [errors, setErrors] = useState<FieldErrors>({})
   const u = useUnitFormat()
+  const metric = u.units === 'metric'
+  const load = loadInputText(loadInput, u.units)
 
   const errorFor = (k: keyof FieldErrors) => errors[k] ?? (serverField?.field === k ? serverField.message : undefined)
 
   function submit(ev: FormEvent) {
     ev.preventDefault()
-    const e = validateTrip({ origin, destination, departure, timeZone, load })
+    const e = validateTrip({ origin, destination, departure, timeZone, load, units: u.units })
     setErrors(e)
     if (Object.keys(e).length) return
     onSubmit({
       origin: origin.trim(),
       destination: destination.trim(),
       departure_time: zonedInputToIso(departure, timeZone),
-      load_weight_lb: Number(load),
+      load_weight_lb: loadInputToLb(loadInput),
       interval_mi: interval,
     })
   }
@@ -155,24 +160,21 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
 
       <div>
         <label htmlFor="load" className="mb-1 block text-xs font-medium text-slate-700">
-          Load weight (lb)
+          Load weight ({metric ? 'kg' : 'lb'})
         </label>
         <input
           id="load"
           type="number"
           inputMode="numeric"
           min={1}
-          max={100000}
-          step={100}
+          max={metric ? LOAD_MAX_KG : LOAD_MAX_LB}
+          step={metric ? 50 : 100}
           className={inputCls}
           value={load}
-          onChange={(e) => setLoad(e.target.value)}
+          onChange={(e) => setLoadInput({ text: e.target.value, units: u.units })}
           aria-invalid={!!errorFor('load_weight_lb')}
           aria-describedby={errorFor('load_weight_lb') ? 'load-err' : undefined}
         />
-        {u.units === 'metric' && Number(load) > 0 && (
-          <p className="mt-1 text-[11px] text-slate-500">≈ {u.weight(Number(load))}</p>
-        )}
         <FieldError id="load-err" msg={errorFor('load_weight_lb')} />
       </div>
 
@@ -196,7 +198,7 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
                 onChange={() => setIntervalMi(mi)}
                 className="sr-only"
               />
-              {mi} mi
+              {metric ? `${Math.round(miToKm(mi))} km` : `${mi} mi`}
             </label>
           ))}
         </div>

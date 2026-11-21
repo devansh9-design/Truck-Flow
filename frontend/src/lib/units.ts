@@ -15,6 +15,37 @@ export const kmhToMph = (kmh: number) => kmh / KM_PER_MI
 export const inHrToMmHr = (inHr: number) => inHr * MM_PER_IN
 export const mmHrToInHr = (mmHr: number) => mmHr / MM_PER_IN
 export const lbToKg = (lb: number) => lb * KG_PER_LB
+export const kgToLb = (kg: number) => kg / KG_PER_LB
+
+/** Load limits the API accepts (lb), and the same limits in the display unit. */
+export const LOAD_MIN_LB = 1
+export const LOAD_MAX_LB = 100_000
+export const LOAD_MAX_KG = Math.floor(lbToKg(LOAD_MAX_LB)) // 45,359
+
+/** A load typed in the form, in the units it was typed in. */
+export interface LoadInput {
+  text: string
+  units: Units
+}
+
+/** Pounds for the API (whole lb when typed in kg); NaN when the text is not a number. */
+export function loadInputToLb(input: LoadInput): number {
+  if (input.text.trim() === '') return Number.NaN
+  const v = Number(input.text)
+  if (!Number.isFinite(v)) return Number.NaN
+  return input.units === 'metric' ? Math.round(kgToLb(v)) : v
+}
+
+/**
+ * The load as shown in `units`. Converted for display only: the typed text is kept, so
+ * switching units back and forth never changes the weight that is sent.
+ */
+export function loadInputText(input: LoadInput, units: Units): string {
+  if (input.units === units) return input.text
+  const v = Number(input.text)
+  if (input.text.trim() === '' || !Number.isFinite(v)) return input.text
+  return String(units === 'metric' ? Math.round(lbToKg(v)) : Math.round(kgToLb(v)))
+}
 
 export interface UnitFormat {
   units: Units

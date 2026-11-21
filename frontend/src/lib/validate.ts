@@ -1,5 +1,6 @@
 // Client-side checks mirroring the server's validation (the server stays authoritative).
 import { zonedInputToIso } from './format'
+import { LOAD_MAX_KG, LOAD_MAX_LB, LOAD_MIN_LB, type Units } from './units'
 
 export interface FieldErrors {
   origin?: string
@@ -11,7 +12,7 @@ export interface FieldErrors {
 const PAST_TOLERANCE_MS = 60 * 60 * 1000
 
 export function validateTrip(
-  v: { origin: string; destination: string; departure: string; timeZone: string; load: string },
+  v: { origin: string; destination: string; departure: string; timeZone: string; load: string; units?: Units },
   now: Date = new Date(),
 ): FieldErrors {
   const e: FieldErrors = {}
@@ -29,8 +30,13 @@ export function validateTrip(
   }
   if (Number.isNaN(t)) e.departure_time = 'Choose a departure date and time.'
   else if (t < now.getTime() - PAST_TOLERANCE_MS) e.departure_time = 'Departure cannot be more than 1 hour in the past.'
+  // `load` is in the units it was typed in (kg when the display is metric).
   const load = Number(v.load)
-  if (!v.load || !Number.isFinite(load) || load < 1 || load > 100_000)
-    e.load_weight_lb = 'Load weight must be between 1 and 100,000 lb.'
+  const metric = v.units === 'metric'
+  const max = metric ? LOAD_MAX_KG : LOAD_MAX_LB
+  if (!v.load.trim() || !Number.isFinite(load) || load < LOAD_MIN_LB || load > max)
+    e.load_weight_lb = metric
+      ? `Load weight must be between 1 and ${LOAD_MAX_KG.toLocaleString('en-US')} kg.`
+      : 'Load weight must be between 1 and 100,000 lb.'
   return e
 }
