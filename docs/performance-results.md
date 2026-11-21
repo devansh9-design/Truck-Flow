@@ -44,8 +44,42 @@ analysis returns a heatmap (`React.lazy` in `MapView.tsx`). Before that change P
 was 78 with 480 ms Total Blocking Time. The remaining main bundle is mostly MapLibre,
 which the first screen needs to draw the map.
 
-## Not measured here
+## Production (live)
 
-- Production (Render + Vercel) numbers: Render's free services sleep after 15 minutes, so
-  the first request after idle adds about a minute of wake-up. Re-run the checks above
-  against the live URL after deploying (see `docs/deployment.md` §5).
+Measured 2026-11-21 against the deployed app: frontend https://truck-flow-psi.vercel.app
+(Vercel), API `truck-routing-api-qtf7` and risk engine `truck-risk-engine-ohio` (Render free
+tier), weather through the Open-Meteo relay (ADR 015). Services were awake before each run;
+a cold start after 15 minutes idle adds about a minute (see "Keeping the services awake" in
+`docs/deployment.md`).
+
+### API (`perf_check.py --base https://truck-routing-api-qtf7.onrender.com`)
+
+Same trip as above: Chicago, IL → Denver, CO, 1,247 mi, load 42,000 lb.
+
+| Metric | Target | Result | Status |
+|---|---|---|---|
+| Analyze, 25 mi interval, warm cache | ≤ 8 s | **4.75 s** (139 checkpoints, 3 routes) | ✅ |
+| Analyze, 25 mi interval, cold cache | (info) | 7.16 s | — |
+| Analyze, 10 mi interval, warm cache | ≤ 12 s | **4.69 s** (341 checkpoints) | ✅ |
+| Analyze, 10 mi interval, cold cache | (info) | 5.85 s | — |
+| Heatmap request after analyze | (info) | 4.42 s (10 × 25 cells × 49 h) | — |
+| Heatmap payload | ≤ 1.5 MB | **200 KB** raw | ✅ |
+
+Slower than local because Render's free instances have a fraction of a CPU, and each
+request crosses Render (Oregon) → Render (Ohio) → Vercel → Open-Meteo.
+
+### Browser (Lighthouse 12.8.2, desktop preset, 3 runs)
+
+| Metric | Target | Result | Status |
+|---|---|---|---|
+| Lighthouse Performance | ≥ 80 | **94** median (82 / 96 / 94) | ✅ |
+| Lighthouse Accessibility | ≥ 90 | **100** (all runs) | ✅ |
+| Lighthouse Best Practices | (info) | **100** (all runs; the local CORS console error is gone) | — |
+| Largest Contentful Paint | (info) | 1.2 s median | — |
+| Total Blocking Time | (info) | 110 ms median | — |
+| First Contentful Paint | (info) | 0.8 s median | — |
+| Page weight | (info) | 3.9 MB, mostly basemap tiles | — |
+
+Vercel serves the build compressed, which is why Performance is higher than the local
+`vite preview` run. The slider measurements above were taken locally; scrubbing makes no
+network calls, so they do not depend on the server.
