@@ -19,8 +19,8 @@ export function Results({ data }: { data: AnalyzeResponse }) {
           <span className="sr-only">to</span> {trip.destination.label}
         </p>
         <p>
-          Departs {formatTime(trip.departure_time)} · {trip.load_weight_lb.toLocaleString('en-US')} lb ·
-          every {trip.interval_mi} mi
+          Departs {formatTime(trip.departure_time)} · {trip.load_weight_lb.toLocaleString('en-US')} lb · every{' '}
+          {trip.interval_mi} mi
         </p>
       </section>
 
@@ -33,7 +33,9 @@ export function Results({ data }: { data: AnalyzeResponse }) {
           <h2 id="rec-heading" className="font-semibold text-sky-900">
             ★ Take {recommended.label}
           </h2>
-          <p className="mt-0.5 text-xs font-medium text-sky-800">Decided by: {decidedByText(recommendation.decided_by)}</p>
+          <p className="mt-0.5 text-xs font-medium text-sky-800">
+            Decided by: {decidedByText(recommendation.decided_by)}
+          </p>
           <p className="mt-1 text-xs text-slate-700">{recommendation.reason}</p>
           {recommended.warnings.includes('NO_TRAVEL_CONDITIONS') && (
             <p role="alert" className="mt-2 rounded bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-900">

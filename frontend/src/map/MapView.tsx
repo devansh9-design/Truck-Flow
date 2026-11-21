@@ -1,5 +1,5 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Layer,
   Map,
@@ -17,8 +17,10 @@ import { maplibregl } from './maplibre'
 import { riskColorExpression, riskStyle } from '../lib/risk'
 import { truckPosition } from '../lib/heatmap'
 import { riskSegments } from '../lib/segments'
-import { HeatmapOverlay } from './HeatmapOverlay'
 import { useTimeFormatter, useUi } from '../store/ui'
+
+// deck.gl is only needed once a heatmap exists: load it on demand so it is not parsed at startup.
+const HeatmapOverlay = lazy(() => import('./HeatmapOverlay').then((m) => ({ default: m.HeatmapOverlay })))
 
 const STYLE_URL = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty'
 const US_VIEW = { longitude: -98.5, latitude: 39.5, zoom: 3.4 }
@@ -140,7 +142,11 @@ export function MapView({ data, heat }: Props) {
       <NavigationControl position="top-right" showCompass={false} />
       <ScaleControl position="top-right" unit="imperial" />
 
-      {heat && <HeatmapOverlay heat={heat} />}
+      {heat && (
+        <Suspense fallback={null}>
+          <HeatmapOverlay heat={heat} />
+        </Suspense>
+      )}
 
       <Source id="routes" type="geojson" data={routeLines}>
         {/* Alternates: grey; the recommended route keeps a blue dashed line when not selected. */}

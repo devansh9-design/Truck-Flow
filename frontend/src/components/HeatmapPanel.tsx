@@ -87,7 +87,9 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
               aria-checked={variable === v}
               onClick={() => setVariable(v)}
               className={`rounded px-2 py-1 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/50 ${
-                variable === v ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                variable === v
+                  ? 'bg-white font-semibold text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {VARIABLES[v].label}
@@ -130,6 +132,14 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
                 setPlaying(false)
                 setHour(Number(e.target.value))
               }}
+              onKeyDown={(e) => {
+                // Arrows move 1 h (native); Page Up/Down move 6 h (browsers differ, so set it).
+                if (e.key === 'PageUp' || e.key === 'PageDown') {
+                  e.preventDefault()
+                  setPlaying(false)
+                  setHour(hour + (e.key === 'PageUp' ? 6 : -6))
+                }
+              }}
               aria-label="Forecast hour after departure"
               aria-valuetext={at ? `${hour} hours after departure, ${formatTime(at)}` : `${hour} hours`}
               className="h-2 w-full cursor-pointer accent-sky-700 disabled:cursor-wait"
@@ -156,4 +166,3 @@ export function HeatmapPanel({ times, loading, error, onRetry, route }: Props) {
     </section>
   )
 }
-

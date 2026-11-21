@@ -11,7 +11,7 @@ export interface RiskStyle {
 }
 
 export const RISK_STYLE: Record<RiskLevel, RiskStyle> = {
-  LOW: { label: 'Low', short: 'LOW', icon: '✓', color: '#1b9e77', text: '#ffffff' },
+  LOW: { label: 'Low', short: 'LOW', icon: '✓', color: '#15805f', text: '#ffffff' }, // 4.9:1 with white (WCAG AA)
   MODERATE: { label: 'Moderate', short: 'MOD', icon: '!', color: '#e6c229', text: '#1f1a00' },
   HIGH: { label: 'High', short: 'HIGH', icon: '‼', color: '#f28e2b', text: '#1f1000' },
   SEVERE: { label: 'Severe', short: 'SEV', icon: '▲', color: '#d7263d', text: '#ffffff' },

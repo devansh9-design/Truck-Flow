@@ -61,7 +61,9 @@ export function RouteCard({ route, reason }: { route: Route; reason?: string }) 
           </span>
           <span className="font-semibold text-slate-900">{route.label}</span>
           {route.recommended && (
-            <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800">★ Recommended</span>
+            <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800">
+              ★ Recommended
+            </span>
           )}
         </div>
         <RiskBadge level={s.max_level} size="sm" />

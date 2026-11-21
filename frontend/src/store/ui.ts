@@ -32,8 +32,7 @@ export const useUi = create<UiState>((set) => ({
   setHeatHour: (h) => set({ heatHour: Math.max(0, Math.min(48, Math.round(h))) }),
   setHeatVariable: (heatVariable) => set({ heatVariable }),
   setHeatVisible: (heatVisible) => set({ heatVisible }),
-  selectRoute: (id) =>
-    set((s) => (s.selectedRouteId === id ? s : { selectedRouteId: id, selectedCheckpointId: null })),
+  selectRoute: (id) => set((s) => (s.selectedRouteId === id ? s : { selectedRouteId: id, selectedCheckpointId: null })),
   selectCheckpoint: (id) =>
     set(() => {
       if (!id) return { selectedCheckpointId: null }

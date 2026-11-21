@@ -41,8 +41,7 @@ export function TripForm({ busy, serverField, onSubmit }: Props) {
   const [interval, setIntervalMi] = useState<Interval>(25)
   const [errors, setErrors] = useState<FieldErrors>({})
 
-  const errorFor = (k: keyof FieldErrors) =>
-    errors[k] ?? (serverField?.field === k ? serverField.message : undefined)
+  const errorFor = (k: keyof FieldErrors) => errors[k] ?? (serverField?.field === k ? serverField.message : undefined)
 
   function submit(ev: FormEvent) {
     ev.preventDefault()
@@ -167,7 +166,9 @@ export function TripForm({ busy, serverField, onSubmit }: Props) {
             <label
               key={mi}
               className={`cursor-pointer rounded px-2 py-1.5 text-center text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-600/50 ${
-                interval === mi ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                interval === mi
+                  ? 'bg-white font-semibold text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <input

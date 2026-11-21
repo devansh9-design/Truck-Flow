@@ -42,7 +42,7 @@ export function getHeatmap(bbox: number[], start: string, loadLb: number) {
   return getJson<HeatmapResponse>(`/api/heatmap?${q}`)
 }
 
-export const analyzeTrip =(req: AnalyzeRequest) =>
+export const analyzeTrip = (req: AnalyzeRequest) =>
   getJson<AnalyzeResponse>('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -35,6 +35,8 @@ def get_json(
     to the caller (they carry meaning, e.g. HERE's 400 for bad input) and
     raises UpstreamError / UpstreamTimeout for everything else.
     """
+    # A tuple of pairs (not a list) keeps the type checker happy; httpx treats both the same.
+    query = httpx.QueryParams(tuple(params) if isinstance(params, list) else params)
     owns_client = client is None
     client = client or httpx.Client(timeout=TIMEOUT)
     try:
@@ -43,7 +45,7 @@ def get_json(
             if attempt:
                 time.sleep(RETRY_BACKOFF_S)
             try:
-                resp = client.get(url, params=params)
+                resp = client.get(url, params=query)
             except httpx.TimeoutException as exc:
                 last_exc = exc
                 log.warning("%s timed out (attempt %d)", provider, attempt + 1)
