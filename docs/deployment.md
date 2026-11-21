@@ -101,6 +101,18 @@ Vercel preview deployments get different URLs. Add one to `CORS_ALLOWED_ORIGINS`
 - **Open-Meteo free tier:** a heatmap requests up to 256 locations (cached for 30 min per corridor). That is fine for a demo, but heavy use can reach the free daily limit.
 - **Logs never contain the HERE key:** httpx request logging is kept at WARNING (`backend/config/settings.py`).
 
+## Open-Meteo relay
+
+Open-Meteo's free tier limits calls per outbound IP. Render's free services share outbound IPs that other tenants use up, so the risk engine gets `429 Daily API request limit exceeded` before making any real use (seen in both Oregon and Ohio). The frontend project therefore ships a small Vercel Function, `frontend/api/open-meteo.ts`, that forwards forecast requests to `https://api.open-meteo.com/v1/forecast` from Vercel's network. Its upstream is fixed, so it is not an open proxy.
+
+Point the risk engine at it in **truck-risk-engine → Environment**:
+
+| Variable | Value |
+|---|---|
+| `OPEN_METEO_URL` | `https://<your-vercel-app>.vercel.app/api/open-meteo` |
+
+Unset, the risk engine calls Open-Meteo directly (local development and tests).
+
 ## Accounts and the database
 
 - **Staff account** (sees `/api/admin/stats`: users by country and continent): open **truck-routing-api → Shell** and run `cd backend && python manage.py createsuperuser`. It asks for email, name, country code (e.g. `US`) and password.

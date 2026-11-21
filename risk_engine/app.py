@@ -17,7 +17,7 @@ from flask import Flask, jsonify, request
 from heatmap import build_heatmap
 from heatmap import to_json as heatmap_json
 from pydantic import ValidationError
-from weather import OpenMeteoProvider, WeatherUpstreamError
+from weather import OPEN_METEO_URL, OpenMeteoProvider, WeatherUpstreamError
 from werkzeug.exceptions import HTTPException
 
 from truckrisk_schemas import AlertsRequest, EvaluateRequest, HeatmapRequest
@@ -66,7 +66,11 @@ def create_app(config: dict | None = None) -> Flask:
     # Injectable so tests and scenarios can supply scripted weather.
     app.config.setdefault("FORECAST_PROVIDER", None)
     if app.config["FORECAST_PROVIDER"] is None:
-        app.config["FORECAST_PROVIDER"] = OpenMeteoProvider()
+        # OPEN_METEO_URL lets production send forecast requests through a relay with its own
+        # outbound IP: Render's shared IPs hit Open-Meteo's per-IP free daily limit
+        # (docs/deployment.md, "Open-Meteo relay").
+        url = os.environ.get("OPEN_METEO_URL") or OPEN_METEO_URL
+        app.config["FORECAST_PROVIDER"] = OpenMeteoProvider(url=url)
     app.config.setdefault("ALERT_SOURCE", None)
     if app.config["ALERT_SOURCE"] is None:
         app.config["ALERT_SOURCE"] = NwsClient(user_agent=app.config["NWS_USER_AGENT"])
