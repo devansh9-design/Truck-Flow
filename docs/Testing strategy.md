@@ -220,5 +220,11 @@ Notes from this pass:
 
 - [x] Backend (`tests/test_places.py`, recorded HERE Autocomplete/Lookup responses): country filter sent as alpha-3, `near` bias rounded, whole countries dropped, caching, validation, unknown and malformed ids, upstream failures, API key never in error bodies.
 - [x] E2E (`e2e/places.spec.ts`): typing "B" lists suggestions; arrow keys + Enter pick without submitting; picked places are sent as exact coordinates; the country filter narrows results; typing again clears the exact place; a signed-in user's country is the default filter.
-- Totals: backend 226, frontend 74 (Vitest) + 19 (Playwright).
+- Totals at that point: backend 226, frontend 74 (Vitest) + 19 (Playwright).
 
+## 15. Driving mode (D17)
+
+- [x] Vitest (`tests/driving.test.ts`): distance to a line, overlap share, recognising the route being driven (and leaving it), re-check timing (first fix, every 15 min, after 25 mi but not within 5 min), arrival within 3 mi, weather comparison with tolerances (No Travel before Severe before High), "worsened", warning texts in both unit systems, a faster route alone never warns.
+- [x] E2E (`e2e/driving.spec.ts`, simulated GPS + API): start trip -> first fix re-checks from the position -> a storm on the route raises the warning (focused "Switch" button, axe clean) -> switching follows the safer route; "Keep my route" silences the same warning; ending the trip restores the plan; calm weather stays quiet.
+- [x] Live (browser, real backend, fake position at Laramie WY): re-check analysed "Current position -> Salt Lake City", recognised the route being driven, no warning in calm weather.
+- Totals: backend 226, frontend 90 (Vitest) + 22 (Playwright).

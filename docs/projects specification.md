@@ -65,6 +65,7 @@ The app generates multiple route options, evaluates the weather along each one a
 | FR-J | Saved trips: in the browser (localStorage) for guests, on the server for signed-in users. |
 | FR-K | Optional user accounts (added after Upgrade 2, D15): sign up with name, email, password and country (continent derived from it); sign in / out; edit profile, change password, delete account. Guests keep full use of the app. Staff can see user counts by country and continent. Accounts never change a core result. |
 | FR-L | Place suggestions while typing (from the first letter) with an optional country filter per field; signed-in users default to their profile country. Picking a suggestion fixes exact coordinates; free text still works. |
+| FR-M | Driving mode (phase 1, D17): while the app is open during the trip, follow the phone's location, re-check the road ahead every 15 min (sooner after 25 mi driven) and warn, on screen and by voice, when weather makes another route meaningfully safer or the current route worse. Informational: it never changes how risk or ranking are computed. |
 
 ## 4. Non-functional requirements
 
@@ -173,6 +174,7 @@ The spec leaves these points open. Each decision is fixed here, implemented once
 | D14 | Heatmap time base | Slider hour 0 = the departure hour; hours 0–48 run forward from it. |
 | D15 | Accounts (revises §9) | The developer chose to ship accounts and a database rather than stay a prototype. Sign-in is **optional**; an account stores a profile country and saved trips. Routes, weather, risk and ranking are identical for guests and users. Email verification and password reset wait until an email provider is chosen. |
 | D16 | Abuse protection | Public endpoints are rate-limited (guests per IP, users per account) to protect the HERE quota; over the limit returns 429 `RATE_LIMITED`. |
+| D17 | Driving mode re-checks | Each re-check is an ordinary analysis (same CORE rules and ranking) from the truck's current position to the destination, departing now. The route being driven is recognised in the fresh result by geometry overlap. A switch is suggested only when another route is safer on No Travel, then Severe, then High miles (more than 1 mi, 1 mi and 10 mi better respectively); time alone never triggers a warning while driving. "Keep my route" silences the same warning for 30 min unless the route gets worse. Phase 1 needs the app open (web pages cannot track location in the background); push notifications are phase 2. |
 
 ## 7. Deliverables
 

@@ -19,6 +19,8 @@ export interface Mocks {
   /** Every request the app made to the fake API host, in order. */
   apiCalls: Request[]
   analyzeStatus: number
+  /** When set, /api/analyze answers with this body instead of the fixture. */
+  analyzeOverride: unknown | null
   /** Body for POST /api/alerts (P3-3). */
   alerts: unknown
   /** A fake account server (A6-A9): users by email, the token in use, saved trips. */
@@ -52,6 +54,7 @@ export async function mockBackend(page: Page): Promise<Mocks> {
   const mocks: Mocks = {
     apiCalls: [],
     analyzeStatus: 200,
+    analyzeOverride: null,
     alerts: ALERTS,
     account: { users: {}, token: null, trips: [] },
   }
@@ -77,7 +80,7 @@ export async function mockBackend(page: Page): Promise<Mocks> {
           },
         })
       }
-      return route.fulfill({ json: ANALYZE })
+      return route.fulfill({ json: mocks.analyzeOverride ?? ANALYZE })
     }
     const acct = mocks.account
     const signedIn = !!acct.token && req.headers()['authorization'] === `Bearer ${acct.token}`
