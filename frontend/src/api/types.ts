@@ -100,6 +100,19 @@ export interface AnalyzeResponse {
   notes: string[]
 }
 
+// A4 (CORE-6): 49 hourly frames per variable; each frame is rows x cols values,
+// row-major from the south-west cell. null = no usable forecast for that cell/hour.
+export type HeatmapVariable = 'risk' | 'wind_mph' | 'rain_in_hr' | 'snow_in_hr'
+
+export interface HeatmapResponse {
+  grid: { rows: number; cols: number; lats: number[]; lons: number[] }
+  times: string[]
+  hours: number
+  variables: Record<HeatmapVariable, (number | null)[][]>
+  source: string
+  generated_at: string
+}
+
 export interface Health {
   status: 'ok'
   risk_engine: 'ok' | 'down'

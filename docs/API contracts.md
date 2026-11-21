@@ -184,7 +184,9 @@ Rules guaranteed by this endpoint (mandatory core):
 }
 ```
 
-`variables.<name>[h]` holds hour `h` (0–48): exactly 49 frames, always (CORE-6). The `risk` frames use the same rules as checkpoints (CORE-3). Each frame has `rows × cols` numbers. Values are rounded (wind 0.1, rain/snow 0.01) to keep the payload under 1.5 MB.
+`variables.<name>[h]` holds hour `h` (0–48): exactly 49 frames, always (CORE-6). The `risk` frames use the same rules as checkpoints (CORE-3), as the 1–5 score. Each frame has `rows × cols` values, row-major from the south-west cell; `grid.lats` / `grid.lons` are cell-centre coordinates (south → north, west → east) over the corridor bbox buffered by 25 mi, with at most 256 cells. A value is `null` where the forecast has no usable data for that cell and hour (e.g. past the forecast end); it is never replaced by zero or Low. Values are rounded (wind 0.1, rain/snow 0.01) to keep the payload under 1.5 MB (Denver → Salt Lake City: ~200 KB).
+
+Errors: 400 `VALIDATION_ERROR` (bad `bbox`, a bbox wider than 60° or taller than 30°, `start` without offset or outside now − 2 h … forecast horizon, bad load); 502/504 when the weather service fails.
 
 ### A5. `POST /api/alerts`
 

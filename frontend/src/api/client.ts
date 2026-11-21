@@ -1,5 +1,5 @@
 // Typed client for the public Django API (the only API the browser talks to).
-import type { AnalyzeRequest, AnalyzeResponse, Health } from './types'
+import type { AnalyzeRequest, AnalyzeResponse, Health, HeatmapResponse } from './types'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -37,7 +37,12 @@ export async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const getHealth = () => getJson<Health>('/api/health')
 
-export const analyzeTrip = (req: AnalyzeRequest) =>
+export function getHeatmap(bbox: number[], start: string, loadLb: number) {
+  const q = new URLSearchParams({ bbox: bbox.join(','), start, load_weight_lb: String(loadLb) })
+  return getJson<HeatmapResponse>(`/api/heatmap?${q}`)
+}
+
+export const analyzeTrip =(req: AnalyzeRequest) =>
   getJson<AnalyzeResponse>('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -10,7 +10,14 @@ from django.conf import settings
 from pydantic import ValidationError
 
 from api.errors import BeyondForecastHorizon, UpstreamError, UpstreamTimeout
-from truckrisk_schemas import CheckpointIn, CheckpointResult, EvaluateRequest, EvaluateResponse
+from truckrisk_schemas import (
+    CheckpointIn,
+    CheckpointResult,
+    EvaluateRequest,
+    EvaluateResponse,
+    HeatmapRequest,
+    HeatmapResponse,
+)
 
 log = logging.getLogger(__name__)
 
@@ -92,3 +99,25 @@ def evaluate(load_weight_lb: float, checkpoints: list[CheckpointIn]) -> list[Che
             raise UpstreamError(f"{PROVIDER} returned results that do not match the request.")
         results.extend(body.results)
     return results
+
+
+HEATMAP_MAX_CELLS = 256
+
+
+def heatmap(bbox: list[float], start, load_weight_lb: float) -> bytes:
+    """CORE-6: 49 hourly frames over the corridor, as validated JSON bytes (passed through)."""
+    req = HeatmapRequest(bbox=bbox, start=start, load_weight_lb=load_weight_lb,
+                         max_cells=HEATMAP_MAX_CELLS)
+    resp = _post("/v1/heatmap", req.model_dump_json())
+    if resp.status_code != 200:
+        code = _error_of(resp).get("code")
+        if code == "UPSTREAM_TIMEOUT":
+            raise UpstreamTimeout("The weather forecast service did not respond in time.")
+        if resp.status_code == 401:
+            log.error("risk engine rejected the internal token")
+        raise UpstreamError(f"{PROVIDER} could not build the heatmap.")
+    try:
+        HeatmapResponse.model_validate_json(resp.content)
+    except ValidationError:
+        raise UpstreamError(f"{PROVIDER} returned an unreadable heatmap.") from None
+    return resp.content

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from './api/client'
-import { useAnalyze } from './api/hooks'
+import { useAnalyze, useHeatmap } from './api/hooks'
 import type { AnalyzeRequest } from './api/types'
+import { HeatmapPanel } from './components/HeatmapPanel'
 import { Results } from './components/Results'
 import { StatusPill } from './components/StatusPill'
 import { TripForm } from './components/TripForm'
@@ -25,7 +26,10 @@ export default function App() {
   const reset = useUi((s) => s.reset)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const elapsed = useElapsed(analyze.isPending ? startedAt : null)
-  const data = analyze.data
+  const data = analyze.isPending ? undefined : analyze.data
+  const heat = useHeatmap(data)
+  const selectedRouteId = useUi((s) => s.selectedRouteId)
+  const selectedRoute = data?.routes.find((r) => r.id === selectedRouteId)
   const err = analyze.error instanceof ApiError ? analyze.error : null
   const serverField = err?.field ? { field: err.field, message: err.message } : null
 
@@ -69,10 +73,21 @@ export default function App() {
       </aside>
 
       <main className="relative order-1 h-[45dvh] md:order-2 md:h-auto md:flex-1" aria-label="Route map">
-        <MapView data={analyze.isPending ? undefined : data} />
-        <div className="pointer-events-none absolute bottom-8 left-3">
+        <MapView data={data} heat={heat.data} />
+        <div className="pointer-events-none absolute top-3 left-3">
           <Legend />
         </div>
+        {data && (
+          <div className="pointer-events-none absolute bottom-7 left-1/2 w-[min(540px,calc(100%-24px))] -translate-x-1/2">
+            <HeatmapPanel
+              times={heat.data?.times}
+              loading={heat.isPending}
+              error={heat.isError ? heat.error.message : null}
+              onRetry={() => heat.refetch()}
+              route={selectedRoute}
+            />
+          </div>
+        )}
         {analyze.isPending && (
           <div
             role="status"

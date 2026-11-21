@@ -16,7 +16,7 @@ Versions: latest stable release of each tool at project setup, pinned in `packag
 | Language | **TypeScript** | Catches API-shape mistakes at compile time |
 | Map | **MapLibre GL JS** via **react-map-gl** | CORE-5. WebGL rendering; draws 3 routes and many markers smoothly; open source, no vendor lock-in |
 | Base map tiles | OpenFreeMap or MapTiler (free tier) style URL | Vector basemap for MapLibre; set by `VITE_MAP_STYLE_URL` |
-| Heatmap | **deck.gl `HeatmapLayer`** (MapboxOverlay on MapLibre) | CORE-6. GPU heatmap; re-renders preloaded frames instantly as the slider moves |
+| Heatmap | **deck.gl `BitmapLayer`** (MapboxOverlay on MapLibre) | CORE-6. Each preloaded frame is a tiny image (one pixel per grid cell) smoothed by GPU filtering; the slider swaps images instantly. Chosen over `HeatmapLayer`, which draws point density and rendered the corridor grid as dots (architecture ADR 010). |
 | Server state | **TanStack Query** | Request caching, loading and error states |
 | UI state | **Zustand** | Selected route, slider hour, units, saved trips; tiny and simple |
 | Styling | **Tailwind CSS** | Fast, consistent, responsive layouts for the mobile requirement |
