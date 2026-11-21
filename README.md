@@ -142,19 +142,20 @@ Open http://localhost:5173 and try **Denver, CO → Salt Lake City, UT** with a 
 
 ## Tests and checks
 
-```bash
-cd shared && pytest -q
-cd risk_engine && pytest -q
-cd backend && pytest -q          # includes full-stack scenarios S1–S10 against a real Flask app
-ruff check .                     # from the repo root
+Run from the repo root; each line returns there, so they work in any order.
 
-cd frontend
-npm test                         # Vitest
-npm run e2e                      # Playwright + axe (API and map mocked; first run: npx playwright install chromium)
-npm run lint && npm run typecheck && npm run format:check
+```bash
+(cd shared && pytest -q)
+(cd risk_engine && pytest -q)
+(cd backend && pytest -q)        # includes full-stack scenarios S1–S10 against a real Flask app
+ruff check .
+
+(cd frontend && npm test)        # Vitest
+(cd frontend && npm run e2e)     # Playwright + axe (API and map mocked; first run: npx playwright install chromium)
+(cd frontend && npm run lint && npm run typecheck && npm run format:check)
 ```
 
-None of these call HERE, Open-Meteo or NWS: tests replay recorded provider responses (`backend/tests/fixtures/`, `risk_engine/tests/fixtures/`, `shared/fixtures/`). CI (`.github/workflows/ci.yml`) runs all of them on every push. Live checks against the real providers are in `backend/scripts/core_check_chunk*.py` and `backend/scripts/perf_check.py`, and need the API key.
+None of these call HERE, Open-Meteo or NWS: tests replay recorded provider responses (`backend/tests/fixtures/`, `risk_engine/tests/fixtures/`, `shared/fixtures/`). CI (`.github/workflows/ci.yml`) runs all of them on every push. Live checks against the real providers are in `backend/scripts/core_check_chunk*.py` and `backend/scripts/perf_check.py`, and need the API key. There is no `core_check_chunk3.py`: Chunk 3 is the frontend, so its core check is a walkthrough in the browser, backed by the Playwright E2E suite.
 
 ## Deploy
 

@@ -1,5 +1,7 @@
 """Chunk 4 core check (CORE-6) against a running stack: heatmap over the corridor, 0-48 h.
 
+(There is no chunk 3 script: Chunk 3 is the frontend, checked in the browser and by the E2E suite.)
+
 Runs one analysis, then fetches the heatmap exactly as the browser does, and checks:
   * 49 hourly frames; hour 0 = the departure hour (D14)
   * every frame has rows x cols values for each variable
