@@ -55,11 +55,8 @@ export function zonedInputToIso(value: string, timeZone: string): string {
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${offsetText(off)}`
 }
 
-/** The next whole hour after `now` in `timeZone`, as a datetime-local input value. */
-export function nextHourInput(timeZone: string, now: Date = new Date()): string {
-  // Round on the zone's wall clock so half-hour zones (e.g. +05:30) still get hh:00.
-  const offMs = zoneOffsetMinutes(timeZone, now.getTime()) * 60_000
-  const next = Math.floor((now.getTime() + offMs) / 3_600_000) * 3_600_000 + 3_600_000 - offMs
+/** An instant as a datetime-local input value (wall time in `timeZone`). */
+export function isoToZonedInput(iso: string | number, timeZone: string): string {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-CA', {
       timeZone,
@@ -70,10 +67,18 @@ export function nextHourInput(timeZone: string, now: Date = new Date()): string 
       minute: '2-digit',
       hourCycle: 'h23',
     })
-      .formatToParts(new Date(next))
+      .formatToParts(new Date(iso))
       .map((p) => [p.type, p.value]),
   )
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
+}
+
+/** The next whole hour after `now` in `timeZone`, as a datetime-local input value. */
+export function nextHourInput(timeZone: string, now: Date = new Date()): string {
+  // Round on the zone's wall clock so half-hour zones (e.g. +05:30) still get hh:00.
+  const offMs = zoneOffsetMinutes(timeZone, now.getTime()) * 60_000
+  const next = Math.floor((now.getTime() + offMs) / 3_600_000) * 3_600_000 + 3_600_000 - offMs
+  return isoToZonedInput(next, timeZone)
 }
 
 /** Trip time zones offered in the form; the browser's own zone is added if missing. */

@@ -63,5 +63,7 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 - E2E runs one worker: each page needs two software WebGL contexts in headless Chromium.
 - npm on Windows drops `@emnapi/core`/`@emnapi/runtime` from the lockfile (rolldown wasm32 fallback); they are pinned as devDependencies so `npm ci` works on Linux CI. Keep them.
 - Developer deploys the final version later (per `docs/deployment.md`).
-- **Next:** Upgrade 2 (P3-1 mobile, P3-2 unit toggle, P3-3 weather alerts, P3-4 saved trips).
+- Upgrade 2 done and committed: P3-1 mobile bottom sheet under 768 px (`components/BottomSheet.tsx`, snaps peek/half/full; heatmap panel floats above it; `.touch-range` slider + hour step buttons), P3-2 unit toggle (`lib/units.ts`, display only, remembered in localStorage), P3-3 NWS alerts (`risk_engine/alerts.py` → `POST /v1/alerts` → Django `POST /api/alerts`; frontend samples points every ~50 mi, max 100; panel + map badges; informational only), P3-4 saved trips (`lib/savedTrips.ts`, `store/savedTrips.ts`; max 20; reopen re-runs analysis with resolved places, past departures move to the next hour). Tests in `risk_engine/tests/test_alerts.py`, `backend/tests/test_alerts_api.py`, `frontend/tests/upgrade2.test.tsx`, `frontend/e2e/upgrade2.spec.ts`.
+- NWS: one `alerts/active?point=` call per point; non-covered points return 400 "out of bounds" (recorded in `risk_engine/tests/fixtures/nws_*.json`, re-record with `risk_engine/scripts/record_nws_fixtures.py`).
+- **Next:** Release (README, final deploy, Loom script).
 - One venv at repo root (`.venv`); run backend tests from `backend/`, risk engine tests from `risk_engine/`.

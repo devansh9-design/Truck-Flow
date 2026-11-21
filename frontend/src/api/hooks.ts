@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { analyzeTrip, getHealth, getHeatmap } from './client'
+import { useMemo } from 'react'
+import { analyzeTrip, getAlerts, getHealth, getHeatmap } from './client'
 import type { AnalyzeRequest, AnalyzeResponse } from './types'
+import { alertPoints } from '../lib/alerts'
 import { hourZero } from '../lib/heatmap'
 
 /** Called on load so sleeping hosts (Render free tier) wake before the first submit. */
@@ -37,4 +39,21 @@ export function useHeatmap(data: AnalyzeResponse | undefined) {
     retry: 1,
     refetchOnWindowFocus: false,
   })
+}
+
+/**
+ * P3-3 (non-core): NWS alerts at points about every 50 mi along the analysed routes.
+ * Fetched after the analysis, in the background; failure never affects the results.
+ */
+export function useAlerts(data: AnalyzeResponse | undefined) {
+  const points = useMemo(() => (data ? alertPoints(data.routes) : []), [data])
+  const query = useQuery({
+    queryKey: ['alerts', points.map((p) => [p.lat, p.lon])],
+    queryFn: () => getAlerts(points.map(({ lat, lon }) => ({ lat, lon }))),
+    enabled: points.length > 0,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  })
+  return { points, ...query }
 }

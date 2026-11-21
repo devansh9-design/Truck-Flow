@@ -10,7 +10,12 @@ from rest_framework.response import Response
 from clients import risk_engine
 from geo.geocode import geocode
 
-from .serializers import GeocodeQuerySerializer, HeatmapQuerySerializer, TripRequestSerializer
+from .serializers import (
+    AlertsRequestSerializer,
+    GeocodeQuerySerializer,
+    HeatmapQuerySerializer,
+    TripRequestSerializer,
+)
 from .services import analyze_trip, iso_z, plan_trip
 
 
@@ -64,4 +69,13 @@ def heatmap(request: Request) -> HttpResponse:
     ser.is_valid(raise_exception=True)
     v = ser.validated_data
     body = risk_engine.heatmap(v["bbox"], v["start"], v["load_weight_lb"])
+    return HttpResponse(body, content_type="application/json")
+
+
+@api_view(["POST"])
+def alerts(request: Request) -> HttpResponse:
+    """A5 (non-core): NWS alerts near the routes. Informational; never changes risk or ranking."""
+    ser = AlertsRequestSerializer(data=request.data)
+    ser.is_valid(raise_exception=True)
+    body = risk_engine.alerts(ser.validated_data["points"])
     return HttpResponse(body, content_type="application/json")

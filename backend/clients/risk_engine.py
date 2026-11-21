@@ -11,6 +11,8 @@ from pydantic import ValidationError
 
 from api.errors import BeyondForecastHorizon, UpstreamError, UpstreamTimeout
 from truckrisk_schemas import (
+    AlertsRequest,
+    AlertsResponse,
     CheckpointIn,
     CheckpointResult,
     EvaluateRequest,
@@ -120,4 +122,22 @@ def heatmap(bbox: list[float], start, load_weight_lb: float) -> bytes:
         HeatmapResponse.model_validate_json(resp.content)
     except ValidationError:
         raise UpstreamError(f"{PROVIDER} returned an unreadable heatmap.") from None
+    return resp.content
+
+
+def alerts(points: list[dict]) -> bytes:
+    """A5/B4 (non-core): NWS alerts near the routes, as validated JSON bytes (passed through)."""
+    req = AlertsRequest.model_validate({"points": points})
+    resp = _post("/v1/alerts", req.model_dump_json())
+    if resp.status_code != 200:
+        code = _error_of(resp).get("code")
+        if code == "UPSTREAM_TIMEOUT":
+            raise UpstreamTimeout("The weather alerts service did not respond in time.")
+        if resp.status_code == 401:
+            log.error("risk engine rejected the internal token")
+        raise UpstreamError("Weather alerts are unavailable right now.")
+    try:
+        AlertsResponse.model_validate_json(resp.content)
+    except ValidationError:
+        raise UpstreamError("The weather alerts service returned an unreadable response.") from None
     return resp.content

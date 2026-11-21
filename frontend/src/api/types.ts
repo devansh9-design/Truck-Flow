@@ -1,4 +1,4 @@
-// Wire types for the public Django API (docs/API contracts.md, A1–A3).
+// Wire types for the public Django API (docs/API contracts.md, A1–A5).
 // All values are imperial (mi, mph, in/hr, lb); all times are UTC ISO 8601.
 
 export const RISK_LEVELS = ['LOW', 'MODERATE', 'HIGH', 'SEVERE', 'NO_TRAVEL'] as const
@@ -110,4 +110,25 @@ export interface Health {
   status: 'ok'
   risk_engine: 'ok' | 'down'
   time: string
+}
+
+// A5 (non-core, informational): NWS active alerts near the routes. Never affects risk or ranking.
+export type AlertSeverity = 'Extreme' | 'Severe' | 'Moderate' | 'Minor' | 'Unknown'
+
+export interface WeatherAlert {
+  id: string
+  event: string
+  severity: AlertSeverity
+  headline: string | null
+  areas: string
+  onset: string | null
+  /** null: NWS gives no end time ("until further notice"). */
+  ends: string | null
+  /** Index into the request's `points`: where the alert was found. */
+  point_index: number
+}
+
+export interface AlertsResponse {
+  alerts: WeatherAlert[]
+  coverage: 'US' | 'unsupported_region'
 }

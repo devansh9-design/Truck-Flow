@@ -21,3 +21,68 @@ body {
   padding: 10px 12px;
   box-shadow: 0 6px 20px rgb(15 23 42 / 0.18);
 }
+
+/* Heatmap slider (CORE-6) — P3-1: a larger thumb and hit area on touch screens. */
+.touch-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+}
+.touch-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+}
+.touch-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+}
+.touch-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #0369a1;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.45);
+}
+.touch-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #0369a1;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.45);
+}
+.touch-range:focus-visible {
+  outline: none;
+}
+.touch-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(2 132 199 / 0.45);
+}
+.touch-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgb(2 132 199 / 0.45);
+}
+.touch-range:disabled::-webkit-slider-thumb {
+  background: #94a3b8;
+}
+.touch-range:disabled::-moz-range-thumb {
+  background: #94a3b8;
+}
+@media (pointer: coarse) {
+  .touch-range {
+    height: 44px;
+  }
+  .touch-range::-webkit-slider-thumb {
+    width: 30px;
+    height: 30px;
+    margin-top: -12px;
+  }
+  .touch-range::-moz-range-thumb {
+    width: 30px;
+    height: 30px;
+  }
+}

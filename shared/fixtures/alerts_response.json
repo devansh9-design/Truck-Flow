@@ -1,0 +1,15 @@
+{
+  "alerts": [
+    {
+      "id": "urn:oid:2.49.0.1.840.0.4d30efc28a53054536e3a5c1ea8b2f52f64d7694.001.1",
+      "event": "High Wind Warning",
+      "severity": "Severe",
+      "headline": "High Wind Warning issued November 20 at 2:31AM MST until November 20 at 5:00PM MST by NWS Cheyenne WY",
+      "areas": "North Snowy Range Foothills; South Laramie Range; South Laramie Range Foothills",
+      "onset": "2026-11-20T15:00:00Z",
+      "ends": "2026-11-21T00:00:00Z",
+      "point_index": 1
+    }
+  ],
+  "coverage": "US"
+}

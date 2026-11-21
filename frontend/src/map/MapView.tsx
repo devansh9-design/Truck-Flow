@@ -11,7 +11,9 @@ import {
   type MapLayerMouseEvent,
   type MapRef,
 } from 'react-map-gl/maplibre'
-import type { AnalyzeResponse, HeatmapResponse, Route } from '../api/types'
+import type { AlertsResponse, AnalyzeResponse, HeatmapResponse, Route, WeatherAlert } from '../api/types'
+import { SeverityChip } from '../components/AlertsPanel'
+import { alertsByPoint, SEVERITY_STYLE, topSeverity, type AlertPoint } from '../lib/alerts'
 import { CheckpointDetails } from '../components/CheckpointDetails'
 import { maplibregl } from './maplibre'
 import { riskColorExpression, riskStyle } from '../lib/risk'
@@ -32,6 +34,10 @@ const ALTERNATE_COLOR = '#64748b'
 interface Props {
   data: AnalyzeResponse | undefined
   heat?: HeatmapResponse
+  /** P3-3 (informational): alert points sent to /api/alerts and the answer. */
+  alerts?: { points: AlertPoint[]; data: AlertsResponse | undefined }
+  /** P3-1: px of map hidden under the mobile bottom sheet (kept clear when fitting routes). */
+  bottomInset?: number
 }
 
 function findCheckpoint(routes: Route[], id: string | null) {
@@ -43,13 +49,16 @@ function findCheckpoint(routes: Route[], id: string | null) {
   return null
 }
 
-export function MapView({ data, heat }: Props) {
+export function MapView({ data, heat, alerts, bottomInset = 0 }: Props) {
   const mapRef = useRef<MapRef>(null)
   const selectedRouteId = useUi((s) => s.selectedRouteId)
   const selectedCheckpointId = useUi((s) => s.selectedCheckpointId)
   const selectRoute = useUi((s) => s.selectRoute)
   const selectCheckpoint = useUi((s) => s.selectCheckpoint)
   const formatTime = useTimeFormatter()
+  const units = useUi((s) => s.units)
+  const selectedAlertPoint = useUi((s) => s.selectedAlertPoint)
+  const selectAlertPoint = useUi((s) => s.selectAlertPoint)
   const [hoverRouteId, setHoverRouteId] = useState<string | null>(null)
   const [cursor, setCursor] = useState<string>('')
 
@@ -90,21 +99,50 @@ export function MapView({ data, heat }: Props) {
     [routes, selectedRouteId],
   )
 
+  // Read at fit time only: moving the sheet must not re-fit the map.
+  const insetRef = useRef(bottomInset)
+  useEffect(() => {
+    insetRef.current = bottomInset
+  }, [bottomInset])
+
   const fit = useCallback(() => {
     const bbox = data?.corridor.bbox
-    if (!bbox || !mapRef.current) return
-    mapRef.current.fitBounds(
+    const map = mapRef.current
+    if (!bbox || !map) return
+    const h = map.getContainer().clientHeight
+    const pad = h < 500 ? 24 : 48
+    // Never pad more than the map can give (tiny screens), or fitBounds refuses to move.
+    const bottom = Math.min(pad + insetRef.current, Math.max(pad, h - pad - 80))
+    map.fitBounds(
       [
         [bbox[0], bbox[1]],
         [bbox[2], bbox[3]],
       ],
-      { padding: 48, duration: 700 },
+      { padding: { top: pad + 40, left: pad, right: pad, bottom }, duration: 700 },
     )
   }, [data])
 
   useEffect(() => fit(), [fit])
 
   const activeCp = findCheckpoint(routes, selectedCheckpointId)
+
+  const alertData = alerts?.data
+  const alertGroups = useMemo(
+    () =>
+      alertData?.coverage === 'US' ? alertsByPoint(alertData.alerts) : new globalThis.Map<number, WeatherAlert[]>(),
+    [alertData],
+  )
+  const activeAlertPoint = selectedAlertPoint !== null ? alerts?.points[selectedAlertPoint] : undefined
+  const activeAlerts = selectedAlertPoint !== null ? alertGroups.get(selectedAlertPoint) : undefined
+
+  // Bring an alert chosen from the list into view.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !activeAlertPoint) return
+    if (!map.getBounds().contains([activeAlertPoint.lon, activeAlertPoint.lat])) {
+      map.easeTo({ center: [activeAlertPoint.lon, activeAlertPoint.lat], duration: 500 })
+    }
+  }, [activeAlertPoint])
 
   function onClick(e: MapLayerMouseEvent) {
     const f = e.features?.[0]
@@ -140,7 +178,7 @@ export function MapView({ data, heat }: Props) {
       attributionControl={{ compact: true }}
     >
       <NavigationControl position="top-right" showCompass={false} />
-      <ScaleControl position="top-right" unit="imperial" />
+      <ScaleControl position="top-right" unit={units === 'metric' ? 'metric' : 'imperial'} />
 
       {heat && (
         <Suspense fallback={null}>
@@ -247,6 +285,66 @@ export function MapView({ data, heat }: Props) {
       })}
 
       {selected && heat && <TruckMarker route={selected} times={heat.times} />}
+
+      {alerts &&
+        [...alertGroups.entries()].map(([i, list]) => {
+          const pt = alerts.points[i]
+          if (!pt) return null
+          const st = SEVERITY_STYLE[topSeverity(list)]
+          return (
+            <Marker
+              key={`alert-${i}`}
+              longitude={pt.lon}
+              latitude={pt.lat}
+              anchor="bottom"
+              offset={[0, -6]}
+              onClick={(e) => {
+                e.originalEvent.stopPropagation()
+                selectAlertPoint(selectedAlertPoint === i ? null : i)
+              }}
+            >
+              <button
+                type="button"
+                data-testid="alert-badge"
+                aria-label={`Weather alerts here: ${list.map((a) => a.event).join(', ')}`}
+                title={list.map((a) => a.event).join(', ')}
+                className="flex h-6 min-w-6 items-center justify-center gap-0.5 rounded-md border-2 px-1 text-[11px] font-bold shadow focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400/60"
+                style={{ background: st.bg, color: st.text, borderColor: st.border }}
+              >
+                <span aria-hidden="true">⚠</span>
+                {list.length > 1 && <span aria-hidden="true">{list.length}</span>}
+              </button>
+            </Marker>
+          )
+        })}
+
+      {activeAlertPoint && activeAlerts && (
+        <Popup
+          longitude={activeAlertPoint.lon}
+          latitude={activeAlertPoint.lat}
+          onClose={() => selectAlertPoint(null)}
+          closeOnClick={false}
+          maxWidth="300px"
+          offset={30}
+          focusAfterOpen={false}
+        >
+          <div className="min-w-52 space-y-1.5 text-xs">
+            <p className="font-semibold text-slate-900">Weather alerts (NWS)</p>
+            {activeAlerts.map((a) => (
+              <div key={a.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-medium text-slate-900">{a.event}</span>
+                  <SeverityChip alert={a} />
+                </div>
+                <p className="text-slate-500">
+                  {a.onset ? formatTime(a.onset) : 'Now'} → {a.ends ? formatTime(a.ends) : 'further notice'}
+                </p>
+              </div>
+            ))}
+            <p className="text-[11px] text-slate-500">Informational: does not change risk or ranking.</p>
+          </div>
+        </Popup>
+      )}
 
       {activeCp && (
         <Popup

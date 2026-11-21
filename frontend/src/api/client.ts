@@ -1,5 +1,5 @@
 // Typed client for the public Django API (the only API the browser talks to).
-import type { AnalyzeRequest, AnalyzeResponse, Health, HeatmapResponse } from './types'
+import type { AlertsResponse, AnalyzeRequest, AnalyzeResponse, Health, HeatmapResponse } from './types'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -47,4 +47,11 @@ export const analyzeTrip = (req: AnalyzeRequest) =>
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
+  })
+
+export const getAlerts = (points: { lat: number; lon: number }[]) =>
+  getJson<AlertsResponse>('/api/alerts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ points }),
   })

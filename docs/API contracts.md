@@ -216,6 +216,13 @@ The frontend sends points sampled along the analysed routes (about every 50 mi, 
 
 Outside the US, `alerts` is empty and `coverage` is `"unsupported_region"`. Alerts are non-core and informational: they never change a risk level or the ranking.
 
+Details (confirmed against recorded NWS responses in `risk_engine/tests/fixtures/nws_*.json`):
+
+- One NWS call per distinct point (rounded to 2 decimals, ~1 km), cached 10 minutes. NWS answers 400 `"out of bounds"` for points it does not cover (e.g. Canada); those points are skipped. `coverage` is `"unsupported_region"` only when **every** point is out of bounds; a US ↔ Canada trip gets `"US"` with alerts for its US points.
+- Alerts are deduplicated by NWS `id`; `point_index` is the first request point where an alert was found (the map badge sits there). Order: most severe first (`Extreme`, `Severe`, `Moderate`, `Minor`, `Unknown`), then by `point_index`.
+- `onset` falls back to NWS `effective`; `ends` is `null` when NWS gives no end time ("until further notice"). Times are UTC. `headline` may be `null`.
+- Errors: 400 `VALIDATION_ERROR` (no points, more than 100, bad lat/lon); 502 when NWS fails or rejects the request (429 is not retried); 504 on timeout after one retry. The frontend shows "alerts unavailable" and leaves the results untouched.
+
 ---
 
 ## Part B — Internal API (Flask risk engine)

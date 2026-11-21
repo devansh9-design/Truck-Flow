@@ -1,0 +1,103 @@
+{
+ "status": 200,
+ "body": {
+  "@context": [
+   "https://geojson.org/geojson-ld/geojson-context.jsonld",
+   {
+    "@version": "1.1",
+    "wx": "https://api.weather.gov/ontology#",
+    "@vocab": "https://api.weather.gov/ontology#"
+   }
+  ],
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.4d30efc28a53054536e3a5c1ea8b2f52f64d7694.001.1",
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.4d30efc28a53054536e3a5c1ea8b2f52f64d7694.001.1",
+     "@type": "wx:Alert",
+     "id": "urn:oid:2.49.0.1.840.0.4d30efc28a53054536e3a5c1ea8b2f52f64d7694.001.1",
+     "areaDesc": "North Snowy Range Foothills; South Laramie Range; South Laramie Range Foothills",
+     "geocode": {
+      "SAME": [
+       "056001",
+       "056007",
+       "056021"
+      ],
+      "UGC": [
+       "WYZ110",
+       "WYZ116",
+       "WYZ117"
+      ]
+     },
+     "affectedZones": [
+      "https://api.weather.gov/zones/forecast/WYZ110",
+      "https://api.weather.gov/zones/forecast/WYZ116",
+      "https://api.weather.gov/zones/forecast/WYZ117"
+     ],
+     "references": [],
+     "sent": "2026-11-20T02:31:00-07:00",
+     "effective": "2026-11-20T02:31:00-07:00",
+     "onset": "2026-11-20T08:00:00-07:00",
+     "expires": "2026-11-20T17:00:00-07:00",
+     "ends": "2026-11-20T17:00:00-07:00",
+     "status": "Actual",
+     "messageType": "Alert",
+     "category": "Met",
+     "severity": "Severe",
+     "certainty": "Likely",
+     "urgency": "Expected",
+     "event": "High Wind Warning",
+     "sender": "w-nws.webmaster@noaa.gov",
+     "senderName": "NWS Cheyenne WY",
+     "headline": "High Wind Warning issued November 20 at 2:31AM MST until November 20 at 5:00PM MST by NWS Cheyenne WY",
+     "description": "* WHAT...Southwest winds 30 to 40 mph with gusts up to 65 mph.\n\n* WHERE...South Laramie Range and Foothills including the Interstate\n80 Summit between Cheyenne and Laramie, and North Snowy Range\nFooth",
+     "instruction": "A High Wind Warning means a hazardous high wind event is expected or\noccurring. Sustained wind speeds of at least 40 MPH or gusts of 58\nMPH or stronger can lead to property damage.",
+     "response": "Prepare",
+     "note": null,
+     "parameters": {
+      "AWIPSidentifier": [
+       "NPWCYS"
+      ],
+      "WMOidentifier": [
+       "WWUS75 KCYS 200931"
+      ],
+      "NWSheadline": [
+       "HIGH WIND WARNING IN EFFECT FROM 8 AM THIS MORNING TO 5 PM MST THIS AFTERNOON"
+      ],
+      "BLOCKCHANNEL": [
+       "EAS",
+       "NWEM",
+       "CMAS"
+      ],
+      "EAS-ORG": [
+       "WXR"
+      ],
+      "VTEC": [
+       "/O.NEW.KCYS.HW.W.0043.261120T1500Z-261121T0000Z/"
+      ],
+      "eventEndingTime": [
+       "2026-11-20T17:00:00-07:00"
+      ]
+     },
+     "scope": "Public",
+     "code": "IPAWSv1.0",
+     "language": "en-US",
+     "web": "http://www.weather.gov",
+     "eventCode": {
+      "SAME": [
+       "HWW"
+      ],
+      "NationalWeatherService": [
+       "HWW"
+      ]
+     }
+    }
+   }
+  ],
+  "title": "Current watches, warnings, and advisories for 41.25 N, 105.45 W",
+  "updated": "2026-11-20T10:47:39+00:00"
+ }
+}

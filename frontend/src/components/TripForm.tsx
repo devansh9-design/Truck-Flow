@@ -2,9 +2,20 @@ import { useState, type FormEvent } from 'react'
 import { INTERVALS, type AnalyzeRequest, type Interval } from '../api/types'
 import { browserTimeZone, nextHourInput, TRIP_TIME_ZONES, zonedInputToIso } from '../lib/format'
 import { validateTrip, type FieldErrors } from '../lib/validate'
-import { useUi } from '../store/ui'
+import { useUi, useUnitFormat } from '../store/ui'
+
+export interface TripFormValues {
+  origin: string
+  destination: string
+  /** datetime-local value, read in the trip time zone */
+  departure: string
+  load: string
+  interval: Interval
+}
 
 interface Props {
+  /** Prefill (e.g. a reopened saved trip); remount with a new `key` to apply. */
+  initial?: TripFormValues
   busy: boolean
   serverField?: { field: string; message: string } | null
   onSubmit: (req: AnalyzeRequest) => void
@@ -16,7 +27,7 @@ function zoneOptions(): { id: string; label: string }[] {
   return [{ id: own, label: `${own} (this device)` }, ...TRIP_TIME_ZONES]
 }
 
-const zones = zoneOptions()
+const baseZones = zoneOptions()
 
 const inputCls =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ' +
@@ -31,15 +42,18 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
   )
 }
 
-export function TripForm({ busy, serverField, onSubmit }: Props) {
-  const [origin, setOrigin] = useState('')
-  const [destination, setDestination] = useState('')
+export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
+  const [origin, setOrigin] = useState(initial?.origin ?? '')
+  const [destination, setDestination] = useState(initial?.destination ?? '')
   const timeZone = useUi((s) => s.timeZone)
   const setTimeZone = useUi((s) => s.setTimeZone)
-  const [departure, setDeparture] = useState(() => nextHourInput(timeZone))
-  const [load, setLoad] = useState('42000')
-  const [interval, setIntervalMi] = useState<Interval>(25)
+  const [departure, setDeparture] = useState(() => initial?.departure ?? nextHourInput(timeZone))
+  const [load, setLoad] = useState(initial?.load ?? '42000')
+  const [interval, setIntervalMi] = useState<Interval>(initial?.interval ?? 25)
+  // A reopened trip may use a zone that is not in the list on this device.
+  const zones = baseZones.some((z) => z.id === timeZone) ? baseZones : [{ id: timeZone, label: timeZone }, ...baseZones]
   const [errors, setErrors] = useState<FieldErrors>({})
+  const u = useUnitFormat()
 
   const errorFor = (k: keyof FieldErrors) => errors[k] ?? (serverField?.field === k ? serverField.message : undefined)
 
@@ -109,7 +123,7 @@ export function TripForm({ busy, serverField, onSubmit }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
         <div>
           <label htmlFor="departure" className="mb-1 block text-xs font-medium text-slate-700">
             Departure
@@ -156,6 +170,9 @@ export function TripForm({ busy, serverField, onSubmit }: Props) {
           aria-invalid={!!errorFor('load_weight_lb')}
           aria-describedby={errorFor('load_weight_lb') ? 'load-err' : undefined}
         />
+        {u.units === 'metric' && Number(load) > 0 && (
+          <p className="mt-1 text-[11px] text-slate-500">≈ {u.weight(Number(load))}</p>
+        )}
         <FieldError id="load-err" msg={errorFor('load_weight_lb')} />
       </div>
 

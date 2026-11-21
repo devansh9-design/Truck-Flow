@@ -1,7 +1,6 @@
 import type { Checkpoint, RiskLevel } from '../api/types'
-import { formatNumber } from '../lib/format'
 import { riskStyle } from '../lib/risk'
-import { useTimeFormatter } from '../store/ui'
+import { useTimeFormatter, useUnitFormat } from '../store/ui'
 import { RiskBadge } from './RiskBadge'
 
 function FactorRow({ name, value, level }: { name: string; value: string; level: RiskLevel }) {
@@ -27,6 +26,7 @@ export function CheckpointDetails({ cp, routeLabel, isLast }: { cp: Checkpoint; 
   const place = cp.index === 0 ? 'Origin' : isLast ? 'Destination' : `Checkpoint ${cp.index}`
   const f = cp.risk.factors
   const formatTime = useTimeFormatter()
+  const u = useUnitFormat()
   return (
     <div className="min-w-56 text-xs">
       <div className="mb-1 flex items-start justify-between gap-3">
@@ -34,7 +34,7 @@ export function CheckpointDetails({ cp, routeLabel, isLast }: { cp: Checkpoint; 
           <div className="font-semibold text-slate-900">
             {routeLabel} · {place}
           </div>
-          <div className="text-slate-500">Mile {formatNumber(cp.mile, 1)} of the route</div>
+          <div className="text-slate-500">{u.distance(cp.mile)} along the route</div>
         </div>
         <RiskBadge level={cp.risk.level} size="sm" />
       </div>
@@ -46,9 +46,9 @@ export function CheckpointDetails({ cp, routeLabel, isLast }: { cp: Checkpoint; 
       </dl>
       <table className="mb-2 w-full">
         <tbody>
-          <FactorRow name="Wind" value={`${formatNumber(cp.weather.wind_mph, 1)} mph`} level={f.wind} />
-          <FactorRow name="Rain" value={`${formatNumber(cp.weather.rain_in_hr, 2)} in/hr`} level={f.rain} />
-          <FactorRow name="Snow" value={`${formatNumber(cp.weather.snow_in_hr, 2)} in/hr`} level={f.snow} />
+          <FactorRow name="Wind" value={u.speed(cp.weather.wind_mph)} level={f.wind} />
+          <FactorRow name="Rain" value={u.rate(cp.weather.rain_in_hr)} level={f.rain} />
+          <FactorRow name="Snow" value={u.rate(cp.weather.snow_in_hr)} level={f.snow} />
         </tbody>
       </table>
       {f.load_override && (

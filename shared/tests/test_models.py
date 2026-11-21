@@ -33,3 +33,14 @@ def test_evaluate_request_rejects_extra_fields_and_bad_load():
 def test_unit_conversions_are_exact():
     assert meters_to_miles(1609.344) == pytest.approx(1.0)
     assert lb_to_kg(1) == pytest.approx(0.45359237)
+
+
+def test_alert_fixtures_validate():
+    from pathlib import Path
+
+    from truckrisk_schemas import AlertsRequest, AlertsResponse
+
+    fx = Path(__file__).resolve().parents[1] / "fixtures"
+    AlertsRequest.model_validate_json((fx / "alerts_request.json").read_text())
+    resp = AlertsResponse.model_validate_json((fx / "alerts_response.json").read_text())
+    assert resp.coverage == "US" and resp.alerts[0].severity == "Severe"
