@@ -34,9 +34,9 @@ Conventions for both:
 | 400 | `VALIDATION_ERROR` | Bad or missing input |
 | 401 | `UNAUTHORIZED` | Internal token missing or wrong (Flask only) |
 | 404 | `PLACE_NOT_FOUND` | Origin or destination can't be geocoded |
-| 422 | `NO_ROUTE` | Router finds no truck route |
-| 422 | `BEYOND_FORECAST_HORIZON` | A checkpoint ETA is past the available forecast |
-| 502 | `UPSTREAM_ERROR` | HERE, Open-Meteo, NWS or Flask returned an error |
+| 422 | `NO_ROUTE` | Router reports no truck route (HERE `noRouteFound`); never used for router errors |
+| 422 | `BEYOND_FORECAST_HORIZON` | A checkpoint ETA is later than the last available forecast hour |
+| 502 | `UPSTREAM_ERROR` | HERE, Open-Meteo, NWS or Flask returned an error, rate-limited us (429, not retried), rejected our request, or sent malformed or incomplete data (e.g. a null value at a needed forecast hour) |
 | 504 | `UPSTREAM_TIMEOUT` | An upstream call timed out after retry |
 | 500 | `INTERNAL_ERROR` | Unexpected server error (details logged, not returned) |
 
@@ -152,7 +152,7 @@ At most 5 results. Empty list → the form shows "No match".
 
 Rules guaranteed by this endpoint (mandatory core):
 
-- **CORE-1:** `routes` has 3 entries. Fewer only when no third distinct road exists; `notes` then says why.
+- **CORE-1:** `routes` has 3 entries. Fewer only when HERE returned no third distinct route from its alternatives or up to 6 via-point detours; `notes` records the attempts and outcome and never claims that no road exists.
 - **CORE-2:** checkpoints are spaced `interval_mi` apart along the route; checkpoint 0 is the origin and the last is the destination. Each checkpoint's `weather` is the forecast for its `forecast_hour` (its ETA rounded to the hour).
 - **CORE-3:** `risk` follows the thresholds and load rules in `projects specification.md` §5 exactly. `factors.load_override` is `null`, `"SEVERE"` or `"NO_TRAVEL"`.
 - **CORE-4:** `routes` is sorted by `rank` using `no_travel_mi` (our safety key, D4) → `severe_mi` → `high_mi` → `avg_risk` → `duration_s`. `severe_mi` counts Severe miles only; `no_travel_mi` counts No Travel miles only (D3). Rank 1 has `recommended: true`; `decided_by` names the key that separated it from rank 2 (`no_travel_mi`, `severe_mi`, `high_mi`, `avg_risk`, `duration_s` or `tie`; `only_route` when a single route exists).

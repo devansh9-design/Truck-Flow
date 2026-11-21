@@ -14,10 +14,15 @@ Selection:
     1. Ask for the optimal route plus up to 5 alternatives.
     2. Sort by duration; walk fastest first and drop any route that shares
        > 90% of its length with one already kept (near-duplicate).
-    3. If fewer than 3 remain, request detours through a via point offset to
-       either side of the fastest route's midpoint, and keep distinct ones.
-    4. Keep the 3 fastest distinct routes. Fewer only when no third distinct
-       road was found; `notes` then says why.
+    3. If fewer than 3 remain, request detours through via points offset to
+       either side of the fastest route's midpoint (bounded budget, see
+       VIA_OFFSET_FRACTIONS), and keep distinct ones.
+    4. Keep the 3 fastest distinct routes. Fewer only when HERE returned no
+       third distinct route; `notes` records the attempts and outcome.
+
+Errors (C1): only HERE's `noRouteFound` result becomes NO_ROUTE. Auth
+failures, rate limits (429, not retried), invalid requests (other 4xx) and
+outages become upstream errors and never claim that no route exists.
 """
 
 from __future__ import annotations
@@ -29,7 +34,7 @@ from datetime import datetime
 import flexpolyline
 from django.conf import settings
 
-from api.errors import NoRoute, UpstreamError
+from api.errors import NoRoute, UpstreamError, UpstreamTimeout
 from routing.overlap import Footprint, footprint, is_near_duplicate
 from routing.track import (
     LatLonT,
@@ -49,8 +54,9 @@ PROVIDER = "HERE routing"
 TARGET_ROUTES = 3
 MAX_ALTERNATIVES = 5
 # Via-point offsets as a fraction of the route length, tried in order, each
-# on both sides of the midpoint. Clamped to [VIA_MIN_MI, VIA_MAX_MI].
-VIA_OFFSET_FRACTIONS = (0.15, 0.30)
+# on both sides of the midpoint. Clamped to [VIA_MIN_MI, VIA_MAX_MI]; at most
+# 6 extra HERE calls per trip (C3 attempt budget).
+VIA_OFFSET_FRACTIONS = (0.10, 0.20, 0.35)
 VIA_MIN_MI = 5.0
 VIA_MAX_MI = 150.0
 
@@ -140,14 +146,43 @@ def fetch_routes(
     params.append(("apiKey", settings.HERE_API_KEY))
 
     status, payload = get_json(settings.HERE_ROUTES_URL, params, provider=PROVIDER)
+    return [_parse_route(r, source) for r in _routes_or_raise(status, payload)]
+
+
+class RateLimited(UpstreamError):
+    """HERE answered 429. Not retried: there is no deliberate backoff policy (C1)."""
+
+
+def _routes_or_raise(status: int, payload: object) -> list[dict]:
+    """Classify a HERE response (C1). Only a genuine no-route result becomes NO_ROUTE.
+
+    Shapes confirmed from real responses (tests/fixtures/here_no_route.json,
+    here_bad_request.json):
+      no route -> HTTP 200, "routes": [], notices[].code == "noRouteFound"
+      4xx      -> {"title", "status", "code", "cause", "action", "correlationId"}
+    5xx and timeouts never reach here: get_json retries once, then raises.
+    """
+    # HERE's `title` explains a 4xx; it never contains the key.
+    title = payload.get("title") if isinstance(payload, dict) else None
+    detail = f" ({title})" if title else ""
     if status in (401, 403):
         raise UpstreamError("HERE rejected the API key.")
+    if status == 429:
+        raise RateLimited("The routing service is rate-limiting requests. Please try again in a minute.")
     if status >= 400:
-        # HERE explains 4xx in `title`/`cause`; neither contains the key.
-        title = payload.get("title") if isinstance(payload, dict) else None
-        raise NoRoute(f"The router rejected this trip{f': {title}' if title else ''}.")
+        raise UpstreamError(f"The routing service could not process this request{detail}.")
+    if not isinstance(payload, dict):
+        raise UpstreamError("HERE returned an unreadable routing response.")
     routes = payload.get("routes") or []
-    return [_parse_route(r, source) for r in routes]
+    if routes:
+        return routes
+    notices = [n for n in payload.get("notices") or [] if isinstance(n, dict)]
+    if any(n.get("code") == "noRouteFound" for n in notices):
+        raise NoRoute("No truck route was found between these places.")
+    reason = next((n.get("title") for n in notices if n.get("title")), None)
+    raise UpstreamError(
+        "HERE returned no route without saying why" + (f" ({reason})." if reason else ".")
+    )
 
 
 def select_distinct(candidates: list[CandidateRoute], limit: int | None = None) -> tuple[
@@ -165,18 +200,22 @@ def select_distinct(candidates: list[CandidateRoute], limit: int | None = None) 
 
 
 def via_points(base: Track) -> list[LatLonT]:
-    """Candidate via points left and right of the route midpoint."""
+    """Deterministic via points left and right of the route midpoint, nearest first.
+
+    Offsets that clamp to the same distance are tried once, so the attempt budget
+    is at most 2 x len(VIA_OFFSET_FRACTIONS).
+    """
     total = base.distance_mi
     (mid, _) = base.locate(total / 2)
     (before, _) = base.locate(total * 0.45)
     (after, _) = base.locate(total * 0.55)
     heading = initial_bearing_deg(before, after)
-    points: list[LatLonT] = []
-    for frac in VIA_OFFSET_FRACTIONS:
-        dist = min(max(total * frac, VIA_MIN_MI), VIA_MAX_MI)
-        for side in (90.0, -90.0):
-            points.append(destination_point(mid, heading + side, dist))
-    return points
+    dists = dict.fromkeys(
+        round(min(max(total * f, VIA_MIN_MI), VIA_MAX_MI), 3) for f in VIA_OFFSET_FRACTIONS
+    )
+    return [
+        destination_point(mid, heading + side, dist) for dist in dists for side in (90.0, -90.0)
+    ]
 
 
 @dataclass
@@ -189,9 +228,8 @@ def plan_routes(
     origin: Place, destination: Place, departure: datetime, load_lb: float
 ) -> RoutePlan:
     notes: list[str] = []
+    # The first call decides the trip: NoRoute, rate limits and outages propagate.
     raw = fetch_routes(origin, destination, departure, load_lb, alternatives=MAX_ALTERNATIVES)
-    if not raw:
-        raise NoRoute("No truck route was found between these places.")
 
     distinct, dropped = select_distinct(raw)
     msg = f"Router returned {len(raw)} route{'s' if len(raw) != 1 else ''}"
@@ -199,38 +237,81 @@ def plan_routes(
         msg += f"; {dropped} near-duplicate{'s' if dropped != 1 else ''} dropped"
     notes.append(msg + ".")
 
+    search = _DetourSearch()
     if len(distinct) < TARGET_ROUTES:
-        base = distinct[0].track
-        added = 0
-        for via in via_points(base):
+        search.run(distinct, origin, destination, departure, load_lb)
+        notes.append(search.note())
+
+    distinct.sort(key=lambda c: c.duration_s)
+    kept = distinct[:TARGET_ROUTES]
+    if len(kept) < TARGET_ROUTES:
+        # What we know is what HERE returned, not what roads exist (C3).
+        n = len(kept)
+        notes.append(
+            f"Showing {n} route{'s' if n != 1 else ''}: HERE did not return a "
+            f"{'second' if n == 1 else 'third'} distinct route from its alternatives or "
+            f"{search.attempts} via-point detour{'s' if search.attempts != 1 else ''}. "
+            "Another road may still exist."
+        )
+    return RoutePlan(routes=kept, notes=notes)
+
+
+@dataclass
+class _DetourSearch:
+    """Bounded via-point fallback with a record of what happened (C3).
+
+    Never fabricates a route; failed or empty attempts are counted, not treated
+    as proof that no road exists. A rate limit stops the search early.
+    """
+
+    attempts: int = 0
+    added: int = 0
+    duplicates: int = 0
+    no_route: int = 0
+    failed: int = 0
+    rate_limited: bool = False
+
+    def run(self, distinct: list[CandidateRoute], origin: Place, destination: Place,
+            departure: datetime, load_lb: float) -> None:
+        for via in via_points(distinct[0].track):
             if len(distinct) >= TARGET_ROUTES:
-                break
+                return
+            self.attempts += 1
             try:
                 detours = fetch_routes(
                     origin, destination, departure, load_lb,
                     alternatives=0, via=via, source="via",
                 )
             except NoRoute:
+                self.no_route += 1
+                continue
+            except RateLimited:
+                self.rate_limited = True
+                return
+            except (UpstreamError, UpstreamTimeout):
+                self.failed += 1
                 continue
             for cand in detours:
                 if len(distinct) >= TARGET_ROUTES:
                     break
                 if any(is_near_duplicate(cand.fp, k.fp) for k in distinct):
+                    self.duplicates += 1
                     continue
                 distinct.append(cand)
-                added += 1
-        if added:
-            notes.append(
-                f"Added {added} via-point detour{'s' if added != 1 else ''} "
-                "to reach 3 distinct routes."
-            )
+                self.added += 1
 
-    distinct.sort(key=lambda c: c.duration_s)
-    kept = distinct[:TARGET_ROUTES]
-    if len(kept) < TARGET_ROUTES:
-        notes.append(
-            f"Only {len(kept)} distinct truck route{'s' if len(kept) != 1 else ''} "
-            "exist between these places; no third road could be found, "
-            "even through detours either side of the route."
+    def note(self) -> str:
+        parts = [f"{self.added} added"]
+        if self.duplicates:
+            parts.append(f"{self.duplicates} near-duplicate{'s' if self.duplicates != 1 else ''} skipped")
+        if self.no_route:
+            parts.append(f"{self.no_route} with no route")
+        if self.failed:
+            parts.append(f"{self.failed} failed")
+        text = (
+            f"Tried {self.attempts} via-point detour{'s' if self.attempts != 1 else ''}: "
+            + ", ".join(parts) + "."
         )
-    return RoutePlan(routes=kept, notes=notes)
+        if self.rate_limited:
+            text += " Detour search stopped early: the routing service is rate-limiting requests."
+        return text

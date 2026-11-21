@@ -7,7 +7,9 @@ Sort key, in this exact order and nothing else:
     3. avg_risk      lowest   (spec)
     4. duration_s    shortest (spec)
 Miles are compared rounded to 0.1 mi and avg_risk to 0.01 (D6), so
-floating-point noise never decides a ranking.
+floating-point noise never decides a ranking. duration_s is compared as the
+router reported it, unrounded (D6, review item C6): D6 sets no precision for
+time, and HERE reports whole seconds, so there is no noise to absorb.
 """
 
 from __future__ import annotations
@@ -17,7 +19,8 @@ from dataclasses import dataclass
 
 RANK_KEYS = ("no_travel_mi", "severe_mi", "high_mi", "avg_risk", "duration_s")
 
-_PRECISION = {"no_travel_mi": 1, "severe_mi": 1, "high_mi": 1, "avg_risk": 2, "duration_s": 0}
+# Display/comparison precision; duration_s has none and is compared raw (C6).
+_PRECISION = {"no_travel_mi": 1, "severe_mi": 1, "high_mi": 1, "avg_risk": 2}
 _NAMES = {
     "no_travel_mi": "No Travel miles",
     "severe_mi": "Severe miles",
@@ -53,7 +56,10 @@ class Ranking:
 
 
 def rank_key(r: RankInput) -> tuple:
-    return tuple(round(getattr(r, k), _PRECISION[k]) for k in RANK_KEYS)
+    return tuple(
+        round(getattr(r, k), _PRECISION[k]) if k in _PRECISION else getattr(r, k)
+        for k in RANK_KEYS
+    )
 
 
 def _fmt(key: str, value: float) -> str:

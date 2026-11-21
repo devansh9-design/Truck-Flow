@@ -1,6 +1,7 @@
 """Open-Meteo client: parsing a recorded real response, unit conversion, batching, cache, errors."""
 
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -8,7 +9,15 @@ import httpx
 import pytest
 import respx
 import weather
-from weather import OPEN_METEO_URL, OpenMeteoProvider, WeatherUpstreamError, cell_of, parse_location
+from weather import (
+    OPEN_METEO_URL,
+    BeyondForecast,
+    IncompleteWeather,
+    OpenMeteoProvider,
+    WeatherUpstreamError,
+    cell_of,
+    parse_location,
+)
 
 RECORDED = Path(__file__).parent / "fixtures" / "open_meteo_two_points.json"
 
@@ -68,10 +77,94 @@ def test_unknown_unit_rejected():
         parse_location(_loc([T0], [1.0], [0.0], [0.0], [0.0], units))
 
 
-def test_hour_outside_series_or_null_is_none():
-    s = parse_location(_loc([T0, T0 + 3600], [5.0, None], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]))
-    assert s.at(datetime.fromtimestamp(T0 + 3600, UTC)) is None  # null value
-    assert s.at(datetime.fromtimestamp(T0 + 7200, UTC)) is None  # past the end
+def _hour(ts):
+    return datetime.fromtimestamp(ts, UTC)
+
+
+# --- C4: past the forecast vs incomplete data -----------------------------------
+
+
+def test_hour_after_last_forecast_hour_is_beyond_forecast():
+    s = parse_location(_loc([T0, T0 + 3600], [5.0, 5.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]))
+    with pytest.raises(BeyondForecast):
+        s.at(_hour(T0 + 7200))
+
+
+@pytest.mark.parametrize("var", ["wind", "rain", "showers", "snow"])
+def test_null_value_inside_range_is_incomplete_not_beyond(var):
+    cols = {"wind": [5.0, 5.0], "rain": [0.0, 0.0], "showers": [0.0, 0.0], "snow": [0.0, 0.0]}
+    cols[var] = [cols[var][0], None]
+    s = parse_location(_loc([T0, T0 + 3600], cols["wind"], cols["rain"], cols["showers"],
+                            cols["snow"]))
+    assert s.at(_hour(T0)).wind_mph == 5.0  # other hours stay usable
+    with pytest.raises(IncompleteWeather):
+        s.at(_hour(T0 + 3600))
+
+
+def test_missing_interior_hour_is_incomplete():
+    s = parse_location(_loc([T0, T0 + 7200], [5.0, 5.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]))
+    with pytest.raises(IncompleteWeather):
+        s.at(_hour(T0 + 3600))
+
+
+def test_incomplete_weather_is_an_upstream_error():
+    assert issubclass(IncompleteWeather, WeatherUpstreamError)
+    assert not issubclass(BeyondForecast, WeatherUpstreamError)
+
+
+# --- C5: payload shape and values ------------------------------------------------
+
+
+def _ok():
+    return _loc([T0, T0 + 3600], [5.0, 6.0], [0.0, 0.1], [0.0, 0.0], [0.0, 0.0])
+
+
+def _broken(mutate):
+    obj = _ok()
+    mutate(obj)
+    return obj
+
+
+@pytest.mark.parametrize(
+    "obj",
+    [
+        "not an object",
+        None,
+        [],
+        _broken(lambda o: o.pop("hourly")),
+        _broken(lambda o: o.pop("hourly_units")),
+        _broken(lambda o: o["hourly"].pop("snowfall")),
+        _broken(lambda o: o["hourly"].update(rain="0.0")),
+        _broken(lambda o: o["hourly"].update(rain=[0.0])),  # length mismatch
+        _broken(lambda o: o["hourly"].update(time=[T0, "x"])),
+        _broken(lambda o: o["hourly"].update(time=[T0, T0])),  # not increasing
+        _broken(lambda o: o["hourly"].update(time=[T0, T0 + 3600.5])),
+        _broken(lambda o: o["hourly"].update(time=[])),
+        _broken(lambda o: o["hourly_units"].update(snowfall="parsecs")),
+    ],
+    ids=["string", "null", "list", "no-hourly", "no-units", "missing-var", "var-not-list",
+         "length-mismatch", "bad-time", "dup-time", "fractional-time", "empty-time", "bad-unit"],
+)
+def test_malformed_location_raises_upstream_error(obj):
+    with pytest.raises(WeatherUpstreamError):
+        parse_location(obj)
+
+
+@pytest.mark.parametrize("bad", ["5", math.nan, math.inf, -math.inf, -0.1, True, {"v": 1}])
+@pytest.mark.parametrize("var", ["wind_speed_10m", "rain", "showers", "snowfall"])
+def test_bad_values_rejected(var, bad):
+    obj = _ok()
+    obj["hourly"][var] = [0.0, bad]
+    with pytest.raises(WeatherUpstreamError):
+        parse_location(obj)
+
+
+@respx.mock
+@pytest.mark.parametrize("body", ["text", 42, [_loc([T0], [1.0], [0.0], [0.0], [0.0])]])
+def test_wrong_payload_type_or_count_is_upstream_error(body):
+    respx.get(OPEN_METEO_URL).mock(return_value=httpx.Response(200, json=body))
+    with pytest.raises(WeatherUpstreamError):
+        OpenMeteoProvider().series([cell_of(39.0, -100.0), cell_of(40.0, -100.0)])
 
 
 def _body_for(request):

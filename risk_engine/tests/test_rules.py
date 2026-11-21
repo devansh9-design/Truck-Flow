@@ -89,14 +89,14 @@ def test_reasons():
     assert loaded.reason == "No Travel: wind 46.0 mph with load 35,000 lb (> 30,000 lb)."
 
 
-@pytest.mark.parametrize("bad", [-0.01, math.nan])
+@pytest.mark.parametrize("bad", [-0.01, math.nan, math.inf, -math.inf, "3", None, True])
 @pytest.mark.parametrize("fn", [classify_wind, classify_rain, classify_snow])
-def test_negative_or_nan_raise(fn, bad):
+def test_negative_nonfinite_or_non_number_raise(fn, bad):
     with pytest.raises(ValueError):
         fn(bad)
 
 
-@pytest.mark.parametrize("bad", [-1, math.nan])
+@pytest.mark.parametrize("bad", [-1, math.nan, math.inf, -math.inf])
 def test_bad_load_raises(bad):
     with pytest.raises(ValueError):
         load_override(40, bad)

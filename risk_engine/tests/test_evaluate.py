@@ -78,6 +78,53 @@ def test_beyond_horizon_is_422(fake_provider):
     assert err["details"] == {"checkpoint_ids": ["r0-c1"], "count": 1}
 
 
+def _series_with_null(start, hours, null_hour):
+    from weather import Series
+
+    idx = {int(start.timestamp()) + 3600 * h: h for h in range(hours)}
+    wind = [5.0] * hours
+    wind[null_hour] = None
+    return Series(index=idx, wind_mph=wind, rain_in_hr=[0.0] * hours, snow_in_hr=[0.0] * hours)
+
+
+class NullAtHour:
+    """Every cell has a null wind value at one hour inside the forecast range."""
+
+    def __init__(self, null_hour):
+        self.start = datetime(2026, 11, 21, 0, tzinfo=UTC)
+        self.null_hour = null_hour
+
+    def series(self, cells):
+        return ({c: _series_with_null(self.start, 48, self.null_hour) for c in cells},
+                {"cache_hits": 0, "fetched": 1})
+
+
+def test_null_weather_inside_forecast_is_502_not_horizon():
+    cps = [_cp(0, "2026-11-21T10:00:00Z"), _cp(1, "2026-11-21T13:00:00Z")]
+    r = _client(NullAtHour(13)).post("/v1/evaluate", json={"load_weight_lb": 1, "checkpoints": cps},
+                                     headers=H)
+    assert r.status_code == 502
+    err = r.get_json()["error"]
+    assert err["code"] == "UPSTREAM_ERROR"
+    assert "wind" in err["message"]
+    assert "results" not in r.get_json()  # all or nothing: no partial analysis
+
+
+def test_null_at_an_hour_no_checkpoint_needs_is_ignored():
+    cps = [_cp(0, "2026-11-21T10:00:00Z")]
+    r = _client(NullAtHour(13)).post("/v1/evaluate", json={"load_weight_lb": 1, "checkpoints": cps},
+                                     headers=H)
+    assert r.status_code == 200
+
+
+def test_horizon_wins_over_incomplete_when_both_happen():
+    cps = [_cp(0, "2026-11-21T13:00:00Z"), _cp(1, "2026-11-25T13:00:00Z")]
+    r = _client(NullAtHour(13)).post("/v1/evaluate", json={"load_weight_lb": 1, "checkpoints": cps},
+                                     headers=H)
+    assert r.status_code == 422
+    assert r.get_json()["error"]["code"] == "BEYOND_FORECAST_HORIZON"
+
+
 def test_upstream_errors_map_to_502_504():
     from weather import WeatherUpstreamError
 

@@ -117,6 +117,15 @@ def test_d6_ties_within_rounding_fall_through():
     assert r.decided_by == "duration_s"
 
 
+def test_c6_duration_compared_unrounded_as_last_key():
+    # Same four risk keys; durations differ by less than a second.
+    r = rank_routes([R("a", dur=3600.4), R("b", dur=3600.1)])
+    assert r.order == ["b", "a"] and r.decided_by == "duration_s"
+    # Risk keys still round per D6 before duration is reached.
+    r = rank_routes([R("a", high=5.04, avg=1.304, dur=3600.4), R("b", high=5.01, avg=1.296, dur=3600.1)])
+    assert r.order == ["b", "a"] and r.decided_by == "duration_s"
+
+
 def test_full_tie_keeps_input_order():
     r = rank_routes([R("x"), R("y")])
     assert r.order == ["x", "y"] and r.decided_by == "tie"
