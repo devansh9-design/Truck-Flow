@@ -3,23 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
+from clients import risk_engine
 from geo.geocode import resolve_place
 from geo.routes import CandidateRoute, plan_routes
 from routing.sampling import Checkpoint, sample_checkpoints
 from routing.track import haversine_mi
-from truckrisk_schemas import Place
+from scoring.rank import NO_TRAVEL_WARNING, RankInput, rank_routes
+from scoring.score import score_route
+from truckrisk_schemas import CheckpointIn, Place, iso_z
 
 from .errors import ValidationFailed
 
 # Origin and destination closer than this after geocoding are "the same place".
 SAME_PLACE_MI = 0.1
 ROUTE_LETTERS = "ABCDEFGHIJ"
-
-
-def iso_z(t: datetime) -> str:
-    return t.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 @dataclass
@@ -119,3 +118,60 @@ def plan_trip(data: dict) -> TripPlan:
         routes=routes,
         notes=plan.notes,
     )
+
+
+def analyze_trip(data: dict) -> dict:
+    """A3: plan the trip, evaluate every checkpoint's ETA-hour weather, score and rank routes."""
+    plan = plan_trip(data)
+    route_dicts = {r.id: r.to_dict() for r in plan.routes}
+
+    # Exact (unrounded) positions and ETAs, so Flask's hour rounding matches ours.
+    checkpoints = [
+        CheckpointIn(id=f"{r.id}-c{cp.index}", lat=cp.lat, lon=cp.lon, eta=cp.eta)
+        for r in plan.routes
+        for cp in r.checkpoints
+    ]
+    results = {res.id: res for res in risk_engine.evaluate(plan.load_weight_lb, checkpoints)}
+
+    rank_inputs: list[RankInput] = []
+    for r in plan.routes:
+        rd = route_dicts[r.id]
+        for cp in rd["checkpoints"]:
+            res = results[cp["id"]]
+            cp["forecast_hour"] = iso_z(res.forecast_hour)
+            cp["weather"] = res.weather.model_dump()
+            cp["risk"] = res.risk.model_dump(mode="json")
+        # Score on unrounded checkpoint miles; the rounded ones are for display.
+        levels = [results[c["id"]].risk.level for c in rd["checkpoints"]]
+        score = score_route([c.mile for c in r.checkpoints], levels)
+        rd["summary"] = score.to_dict()
+        rd["warnings"] = [NO_TRAVEL_WARNING] if score.has_no_travel else []
+        rank_inputs.append(
+            RankInput(
+                id=r.id,
+                no_travel_mi=score.no_travel_mi,
+                severe_mi=score.severe_mi,
+                high_mi=score.high_mi,
+                avg_risk=score.avg_risk,
+                duration_s=r.route.duration_s,
+            )
+        )
+
+    ranking = rank_routes(rank_inputs)
+    routes_out = []
+    for rank, rid in enumerate(ranking.order, start=1):
+        rd = route_dicts[rid]
+        routes_out.append({"id": rid, "rank": rank, "recommended": rank == 1,
+                           **{k: v for k, v in rd.items() if k != "id"}})
+
+    return {
+        "trip": plan.trip_dict(),
+        "routes": routes_out,
+        "recommendation": {
+            "route_id": ranking.order[0],
+            "decided_by": ranking.decided_by,
+            "reason": ranking.reason,
+        },
+        "corridor": {"bbox": plan.bbox()},
+        "notes": plan.notes,
+    }

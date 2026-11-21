@@ -155,7 +155,7 @@ Rules guaranteed by this endpoint (mandatory core):
 - **CORE-1:** `routes` has 3 entries. Fewer only when no third distinct road exists; `notes` then says why.
 - **CORE-2:** checkpoints are spaced `interval_mi` apart along the route; checkpoint 0 is the origin and the last is the destination. Each checkpoint's `weather` is the forecast for its `forecast_hour` (its ETA rounded to the hour).
 - **CORE-3:** `risk` follows the thresholds and load rules in `projects specification.md` §5 exactly. `factors.load_override` is `null`, `"SEVERE"` or `"NO_TRAVEL"`.
-- **CORE-4:** `routes` is sorted by `rank` using `no_travel_mi` (our safety key, D4) → `severe_mi` → `high_mi` → `avg_risk` → `duration_s`. `severe_mi` counts Severe miles only; `no_travel_mi` counts No Travel miles only (D3). Rank 1 has `recommended: true`; `decided_by` names the key that separated it from rank 2 (`no_travel_mi`, `severe_mi`, `high_mi`, `avg_risk`, `duration_s` or `tie`).
+- **CORE-4:** `routes` is sorted by `rank` using `no_travel_mi` (our safety key, D4) → `severe_mi` → `high_mi` → `avg_risk` → `duration_s`. `severe_mi` counts Severe miles only; `no_travel_mi` counts No Travel miles only (D3). Rank 1 has `recommended: true`; `decided_by` names the key that separated it from rank 2 (`no_travel_mi`, `severe_mi`, `high_mi`, `avg_risk`, `duration_s` or `tie`; `only_route` when a single route exists).
 - `warnings` contains `"NO_TRAVEL_CONDITIONS"` when a route has any No Travel miles, including the recommended route when every option has them.
 
 ### A4. `GET /api/heatmap`

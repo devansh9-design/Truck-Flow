@@ -13,7 +13,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from truckrisk_schemas import round_to_hour
+
 from .track import Track
+
+__all__ = ["Checkpoint", "checkpoint_miles", "round_to_hour", "sample_checkpoints"]
 
 ALLOWED_INTERVALS_MI = (10, 25, 50)
 # A destination closer than this to the last interval mark is merged into it,
@@ -30,12 +34,6 @@ class Checkpoint:
     elapsed_s: float
     eta: datetime
     forecast_hour: datetime
-
-
-def round_to_hour(t: datetime) -> datetime:
-    """Nearest whole hour; exactly :30:00 rounds up."""
-    floor = t.replace(minute=0, second=0, microsecond=0)
-    return floor + timedelta(hours=1) if t - floor >= timedelta(minutes=30) else floor
 
 
 def checkpoint_miles(total_mi: float, interval_mi: float) -> list[float]:
