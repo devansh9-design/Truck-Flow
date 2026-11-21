@@ -172,3 +172,11 @@ def test_flask_down_is_502_never_partial():
 def test_validation_still_applies():
     r = APIClient().post("/api/analyze", _body(load_weight_lb=0), format="json")
     assert r.status_code == 400 and r.json()["error"]["details"] == {"field": "load_weight_lb"}
+
+
+@freeze_time(NOW)
+@pytest.mark.parametrize("origin", [123, ["Denver"], {"label": "x"}])
+def test_malformed_place_is_a_400_not_a_crash(origin):
+    r = APIClient().post("/api/analyze", _body(origin=origin), format="json")
+    assert r.status_code == 400 and r.json()["error"]["details"] == {"field": "origin"}
+    assert "{label, lat, lon}" in r.json()["error"]["message"]

@@ -1,5 +1,6 @@
 // Upgrade 2 (non-core): unit conversion, saved trips, alert sampling, alerts panel.
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import { render } from './render'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

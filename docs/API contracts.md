@@ -33,6 +33,11 @@ Conventions for both:
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Bad or missing input |
 | 401 | `UNAUTHORIZED` | Internal token missing or wrong (Flask only) |
+| 401 | `NOT_AUTHENTICATED` | A signed-in-only endpoint was called without `Authorization: Bearer …` |
+| 401 | `TOKEN_INVALID` | The bearer token is unknown, expired or revoked (the app then signs out locally and retries as a guest) |
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password (same message for both); wrong password when deleting an account |
+| 403 | `FORBIDDEN` | Signed in but not allowed (e.g. `/api/admin/stats` without staff) |
+| 429 | `RATE_LIMITED` | Too many requests; `details.retry_after_s` and a `Retry-After` header say when to retry |
 | 404 | `PLACE_NOT_FOUND` | Origin or destination can't be geocoded |
 | 422 | `NO_ROUTE` | Router reports no truck route (HERE `noRouteFound`); never used for router errors |
 | 422 | `BEYOND_FORECAST_HORIZON` | A checkpoint ETA is later than the last available forecast hour |
@@ -222,6 +227,59 @@ Details (confirmed against recorded NWS responses in `risk_engine/tests/fixtures
 - Alerts are deduplicated by NWS `id`; `point_index` is the first request point where an alert was found (the map badge sits there). Order: most severe first (`Extreme`, `Severe`, `Moderate`, `Minor`, `Unknown`), then by `point_index`.
 - `onset` falls back to NWS `effective`; `ends` is `null` when NWS gives no end time ("until further notice"). Times are UTC. `headline` may be `null`.
 - Errors: 400 `VALIDATION_ERROR` (no points, more than 100, bad lat/lon); 502 when NWS fails or rejects the request (429 is not retried); 504 on timeout after one retry. The frontend shows "alerts unavailable" and leaves the results untouched.
+
+### A6. Accounts — `/api/auth/*` (optional sign-in, D15)
+
+Every other endpoint works for guests. Send `Authorization: Bearer <token>` to act as a user.
+
+| Method + path | Body | Success |
+|---|---|---|
+| `POST /api/auth/signup` | `{name, email, password, country}` (ISO 3166-1 alpha-2) | 201 session |
+| `POST /api/auth/login` | `{email, password}` | 200 session |
+| `POST /api/auth/logout` | none (signed in) | 204; this token is revoked |
+| `GET /api/auth/me` | none (signed in) | `{user}` |
+| `PATCH /api/auth/me` | `{name?, country?}` | `{user}` (email and staff flag cannot be changed here) |
+| `DELETE /api/auth/me` | `{password}` | 204; deletes the account, its tokens and trips |
+| `POST /api/auth/password` | `{current_password, new_password}` | 204; other devices are signed out |
+
+```json
+// session
+{ "token": "<43 random characters>", "expires_at": "2026-12-20T12:00:00Z",
+  "user": { "id": 1, "email": "ana@example.com", "name": "Ana Ruiz", "country": "ES",
+            "country_name": "Spain", "continent": "Europe", "is_staff": false,
+            "date_joined": "2026-11-20T12:00:00Z" } }
+```
+
+Emails are case-insensitive. Passwords: at least 8 characters, not common, not all digits, not similar to the email or name (400 `VALIDATION_ERROR`, `details.field = "password"`). Tokens expire 30 days after last use.
+
+### A7. Saved trips — `/api/trips` (signed in)
+
+| Method + path | Body | Success |
+|---|---|---|
+| `GET /api/trips` | none | `{trips: [trip…]}`, newest first, max 20 |
+| `POST /api/trips` | trip without `id` / `saved_at` | 201 `{trip}`; an identical trip is replaced; the oldest beyond 20 are dropped |
+| `POST /api/trips/import` | `{trips: [...]}` (≤ 20, newest first) | `{trips}`; moves trips saved in the browser into the account |
+| `DELETE /api/trips/<id>` | none | 204; 404 if the trip is not the caller's |
+
+A trip has the same shape as the browser's saved trip: `{id, saved_at, origin: {label, lat, lon}, destination, departure_time, load_weight_lb, interval_mi, time_zone, summary: {recommended_label, max_level, distance_mi}}`. Places must be resolved (`{label, lat, lon}`), never free text.
+
+### A8. `GET /api/countries`
+
+`{continents: [7 names], countries: [{code, name, continent}]}`: all 249 ISO 3166-1 entries (`backend/accounts/countries.py`).
+
+### A9. `GET /api/admin/stats` (staff only)
+
+`{users_total, signups_last_7_days, saved_trips_total, by_continent: {name: count}, by_country: [{code, name, users}]}`. 401 for guests, 403 for non-staff. Create a staff account with `python manage.py createsuperuser`.
+
+### Rate limits (D16)
+
+| Endpoints | Guest (per IP) | Signed in (per account) |
+|---|---|---|
+| `POST /api/analyze` | 30 / hour | 120 / hour |
+| `GET /api/heatmap`, `POST /api/alerts` | 60 / hour | 240 / hour |
+| `GET /api/geocode` | 60 / min | 120 / min |
+| `/api/auth/signup`, `login`, `password` | 10 / min | 10 / min |
+| `/api/trips*` | n/a | 60 / min |
 
 ---
 

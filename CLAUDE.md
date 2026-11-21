@@ -26,10 +26,10 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 ## Architecture
 
 - `frontend/`: React + Vite + TypeScript, MapLibre (react-map-gl), deck.gl HeatmapLayer, TanStack Query, Zustand, Tailwind, Radix
-- `backend/`: Django + DRF, the **only public API** (`/api/*`): geocode, routing, sampling, ETA, scoring, ranking
+- `backend/`: Django + DRF, the **only public API** (`/api/*`): geocode, routing, sampling, ETA, scoring, ranking; `accounts/` app (optional sign-in, saved trips, staff stats)
 - `risk_engine/`: Flask, **internal** (`/v1/*`, `X-Internal-Token`): rules, Open-Meteo weather, heatmap frames, NWS alerts
 - `shared/`: Pydantic schemas used by both Python services
-- No Redis, Postgres, Celery or Docker. In-memory caches only.
+- Postgres (Render) for accounts + saved trips (ADR 012); SQLite locally when `DATABASE_URL` is unset. No Redis, Celery or Docker; other caches are in memory.
 - Wire units are always imperial (mi, mph, in/hr, lb); times are UTC ISO 8601.
 - Router gets gross weight = load + `TRUCK_TARE_LB` (default 35,000); the rules use the load as entered.
 
@@ -65,5 +65,7 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 - Developer deploys the final version later (per `docs/deployment.md`).
 - Upgrade 2 done and committed: P3-1 mobile bottom sheet under 768 px (`components/BottomSheet.tsx`, snaps peek/half/full; heatmap panel floats above it; `.touch-range` slider + hour step buttons), P3-2 unit toggle (`lib/units.ts`, display only, remembered in localStorage), P3-3 NWS alerts (`risk_engine/alerts.py` → `POST /v1/alerts` → Django `POST /api/alerts`; frontend samples points every ~50 mi, max 100; panel + map badges; informational only), P3-4 saved trips (`lib/savedTrips.ts`, `store/savedTrips.ts`; max 20; reopen re-runs analysis with resolved places, past departures move to the next hour). Tests in `risk_engine/tests/test_alerts.py`, `backend/tests/test_alerts_api.py`, `frontend/tests/upgrade2.test.tsx`, `frontend/e2e/upgrade2.spec.ts`.
 - NWS: one `alerts/active?point=` call per point; non-covered points return 400 "out of bounds" (recorded in `risk_engine/tests/fixtures/nws_*.json`, re-record with `risk_engine/scripts/record_nws_fixtures.py`).
-- **Next:** Release (README, final deploy, Loom script).
+- Accounts added (spec D15/D16, ADR 012-014): optional sign-in; custom user model `accounts.User` (email, name, ISO country; continent from `accounts/countries.py`, generated once from pycountry); bearer tokens stored as SHA-256, 30-day sliding expiry; `/api/auth/*`, `/api/trips*` (per user, 404 for others' trips), `/api/countries`, staff-only `/api/admin/stats`; DRF throttles from `settings.API_RATES` (off in tests unless set); frontend `store/auth.ts`, `api/account.ts`, `components/Account.tsx`; saved trips use the server when signed in, and browser trips move into the account on sign-in.
+- Local DB: `cd backend && python manage.py migrate` (SQLite `backend/db.sqlite3`, git-ignored). Deployed: Render Postgres from render.yaml; Django migrates on start. Verify `NUM_PROXIES` after deploy (docs/deployment.md).
+- **Next:** place autocomplete with an optional per-field country filter (default from the profile country), then Release (README, final deploy, Loom script).
 - One venv at repo root (`.venv`); run backend tests from `backend/`, risk engine tests from `risk_engine/`.

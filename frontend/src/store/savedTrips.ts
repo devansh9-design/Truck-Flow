@@ -8,6 +8,8 @@ interface SavedTripsState {
   /** false if the browser refused to store it (the list still shows it for this session). */
   save: (data: AnalyzeResponse, timeZone: string) => boolean
   remove: (id: string) => void
+  /** Empties this browser's list (after moving it into an account). */
+  clear: () => void
 }
 
 export const useSavedTrips = create<SavedTripsState>((set, get) => ({
@@ -21,5 +23,9 @@ export const useSavedTrips = create<SavedTripsState>((set, get) => ({
     const trips = removeTrip(get().trips, id)
     set({ trips })
     writeTrips(trips)
+  },
+  clear: () => {
+    set({ trips: [] })
+    writeTrips([])
   },
 }))

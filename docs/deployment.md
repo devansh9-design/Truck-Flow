@@ -29,7 +29,7 @@ Render setup comes from `render.yaml` at the repo root. Python is pinned by `.py
 ## 1. Deploy both Render services from the Blueprint
 
 1. Render dashboard → **New** → **Blueprint** → connect the GitHub repo → select `main`.
-2. Render reads `render.yaml` and shows two services. It asks for every variable marked `sync: false`. Fill in what you can now:
+2. Render reads `render.yaml` and shows two services and one Postgres database (`truck-routing-db`). `DATABASE_URL` is wired to the database automatically, and Django applies migrations each time it starts. Render's free Postgres is time-limited: check Render's current terms and upgrade or export before it expires. It asks for every variable marked `sync: false`. Fill in what you can now:
 
    | Service | Variable | Value |
    |---|---|---|
@@ -100,3 +100,9 @@ Vercel preview deployments get different URLs. Add one to `CORS_ALLOWED_ORIGINS`
 - **Caches are in memory**, one worker per service, so a redeploy or restart empties them. That only costs a little extra time on the next request.
 - **Open-Meteo free tier:** a heatmap requests up to 256 locations (cached for 30 min per corridor). That is fine for a demo, but heavy use can reach the free daily limit.
 - **Logs never contain the HERE key:** httpx request logging is kept at WARNING (`backend/config/settings.py`).
+
+## Accounts and the database
+
+- **Staff account** (sees `/api/admin/stats`: users by country and continent): open **truck-routing-api → Shell** and run `cd backend && python manage.py createsuperuser`. It asks for email, name, country code (e.g. `US`) and password.
+- **Rate limits by client IP** need the real client address. `NUM_PROXIES=1` (render.yaml) takes the last address that Render's proxy appended to `X-Forwarded-For`. Check it once after deploy: sign-in attempts from two different networks (e.g. phone data and Wi-Fi) should each get their own 10/min allowance. If every visitor shares one counter, adjust `NUM_PROXIES` (2 if there is a second proxy hop) and redeploy.
+- **Locally** no setup is needed: without `DATABASE_URL`, Django (with `DJANGO_DEBUG=true`) uses `backend/db.sqlite3` (git-ignored). Run `python manage.py migrate` from `backend/` once.

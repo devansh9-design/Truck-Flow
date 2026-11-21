@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.http import Http404, HttpResponse
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -17,6 +17,7 @@ from .serializers import (
     TripRequestSerializer,
 )
 from .services import analyze_trip, iso_z, plan_trip
+from .throttles import scoped
 
 
 @api_view(["GET"])
@@ -28,6 +29,7 @@ def health(request: Request) -> Response:
 
 
 @api_view(["GET"])
+@throttle_classes([scoped("geocode")])
 def geocode_view(request: Request) -> Response:
     """A2: up to 5 candidate places."""
     ser = GeocodeQuerySerializer(data=request.query_params)
@@ -55,6 +57,7 @@ def debug_routes(request: Request) -> Response:
 
 
 @api_view(["POST"])
+@throttle_classes([scoped("analyze")])
 def analyze(request: Request) -> Response:
     """A3: three ranked routes with ETA-hour weather and risk at every checkpoint."""
     ser = TripRequestSerializer(data=request.data)
@@ -63,6 +66,7 @@ def analyze(request: Request) -> Response:
 
 
 @api_view(["GET"])
+@throttle_classes([scoped("heatmap")])
 def heatmap(request: Request) -> HttpResponse:
     """A4 (CORE-6): all 49 frames for the corridor in one response; the slider never refetches."""
     ser = HeatmapQuerySerializer(data=request.query_params)
@@ -73,6 +77,7 @@ def heatmap(request: Request) -> HttpResponse:
 
 
 @api_view(["POST"])
+@throttle_classes([scoped("alerts")])
 def alerts(request: Request) -> HttpResponse:
     """A5 (non-core): NWS alerts near the routes. Informational; never changes risk or ranking."""
     ser = AlertsRequestSerializer(data=request.data)

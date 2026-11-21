@@ -132,3 +132,33 @@ export interface AlertsResponse {
   alerts: WeatherAlert[]
   coverage: 'US' | 'unsupported_region'
 }
+
+// A6-A9: accounts (optional sign-in), profile country, saved trips on the server.
+export interface User {
+  id: number
+  email: string
+  name: string
+  /** ISO 3166-1 alpha-2 */
+  country: string
+  country_name: string
+  continent: string
+  is_staff: boolean
+  date_joined: string
+}
+
+export interface Session {
+  token: string
+  expires_at: string
+  user: User
+}
+
+export interface Country {
+  code: string
+  name: string
+  continent: string
+}
+
+export interface CountriesResponse {
+  continents: string[]
+  countries: Country[]
+}
