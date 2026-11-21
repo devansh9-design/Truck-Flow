@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { INTERVALS, type AnalyzeRequest, type Interval, type Place } from '../api/types'
+import { EXAMPLE } from '../lib/example'
 import { browserTimeZone, nextHourInput, TRIP_TIME_ZONES, zonedInputToIso } from '../lib/format'
 import { validateTrip, type FieldErrors } from '../lib/validate'
 import { loadInputText, loadInputToLb, LOAD_MAX_KG, LOAD_MAX_LB, miToKm, type LoadInput } from '../lib/units'
@@ -84,6 +85,26 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
       departure_time: zonedInputToIso(departure, timeZone),
       load_weight_lb: loadInputToLb(loadInput),
       interval_mi: interval,
+    })
+  }
+
+  /** One click to a result: fills the form with a sample trip and runs it. */
+  function runExample() {
+    const dep = nextHourInput(timeZone)
+    setOrigin(EXAMPLE.origin)
+    setDestination(EXAMPLE.destination)
+    setOriginPlace(null)
+    setDestinationPlace(null)
+    setDeparture(dep)
+    setLoadInput({ text: String(EXAMPLE.loadLb), units: 'imperial' })
+    setIntervalMi(EXAMPLE.interval)
+    setErrors({})
+    onSubmit({
+      origin: EXAMPLE.origin,
+      destination: EXAMPLE.destination,
+      departure_time: zonedInputToIso(dep, timeZone),
+      load_weight_lb: EXAMPLE.loadLb,
+      interval_mi: EXAMPLE.interval,
     })
   }
 
@@ -218,6 +239,14 @@ export function TripForm({ initial, busy, serverField, onSubmit }: Props) {
         className="w-full rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600/50 focus:ring-offset-1 disabled:cursor-wait disabled:bg-slate-400"
       >
         {busy ? 'Analyzing routes…' : 'Compare routes'}
+      </button>
+      <button
+        type="button"
+        onClick={runExample}
+        disabled={busy}
+        className="w-full rounded-md border border-sky-700 bg-white px-4 py-2 text-sm font-medium text-sky-800 transition-colors hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600/50 focus:ring-offset-1 disabled:cursor-wait disabled:border-slate-300 disabled:text-slate-400"
+      >
+        Try an example: Denver → Salt Lake City
       </button>
     </form>
   )

@@ -4,7 +4,7 @@ Plan a truck trip and see which route is safest in the weather the truck will ac
 
 Enter an origin, destination, departure time and load. The app finds three truck routes, places checkpoints along each one, and looks up the forecast for the hour the truck reaches each checkpoint. It rates every checkpoint Low, Moderate, High, Severe or No Travel, then ranks the routes, safest first. A heatmap with a 0–48 h slider shows how the weather moves along the corridor after departure.
 
-**Live app:** [truck-flow-psi.vercel.app](https://truck-flow-psi.vercel.app). The free servers sleep when idle, so the first load can take about a minute.
+**Live app:** [truck-flow-psi.vercel.app](https://truck-flow-psi.vercel.app). The free servers sleep when idle, so the first load can take about a minute. **Try an example** on the form runs Denver → Salt Lake City in one click.
 
 ## Features
 

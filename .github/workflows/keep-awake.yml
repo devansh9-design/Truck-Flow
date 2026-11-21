@@ -1,0 +1,26 @@
+# Keeps the free Render services awake while the submission is being reviewed.
+#
+# Render's free web services sleep after 15 minutes idle, and the first request after that
+# waits about a minute. /api/health also pings the risk engine, so one call wakes both.
+# Free instance hours are limited (750 per workspace per month; two services awake all
+# month need about 1,488), so turn this off after the review:
+#   gh workflow disable keep-awake.yml
+# GitHub may delay scheduled runs by a few minutes; that is fine for a 15-minute idle limit.
+name: Keep awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the API (also wakes the risk engine)
+        run: |
+          curl --silent --show-error --max-time 120 --retry 2 --retry-delay 10 \
+            https://truck-routing-api-qtf7.onrender.com/api/health

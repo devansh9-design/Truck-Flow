@@ -117,6 +117,16 @@ Vercel preview deployments get different URLs. Add one to `CORS_ALLOWED_ORIGINS`
 - **Open-Meteo free tier:** a heatmap requests up to 256 locations (cached for 30 min per corridor). That is fine for a demo, but heavy use can reach the free daily limit.
 - **Logs never contain the HERE key:** httpx request logging is kept at WARNING (`backend/config/settings.py`).
 
+## Keeping the services awake
+
+Free Render services sleep after 15 minutes without traffic, and the first request after that waits about a minute. `.github/workflows/keep-awake.yml` calls `/api/health` every 10 minutes (the health check also pings the risk engine, so one call wakes both). Run it only while someone is reviewing the app: Render's free plan gives 750 instance hours per workspace per month, and two services awake all month need about 1,488. Turn it off afterwards:
+
+```powershell
+gh workflow disable keep-awake.yml
+```
+
+`gh workflow enable keep-awake.yml` turns it back on; **Run workflow** on the Actions tab pings once by hand.
+
 ## Open-Meteo relay
 
 Open-Meteo's free tier limits calls per outbound IP. Render's free services share outbound IPs that other tenants use up, so the risk engine gets `429 Daily API request limit exceeded` before making any real use (seen in both Oregon and Ohio). The frontend project therefore ships a small Vercel Function, `frontend/api/open-meteo.ts`, that forwards forecast requests to `https://api.open-meteo.com/v1/forecast` from Vercel's network. Its upstream is fixed, so it is not an open proxy.
