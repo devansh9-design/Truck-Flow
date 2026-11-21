@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "id": "r0-c0",
+      "forecast_hour": "2026-11-21T13:00:00Z",
+      "weather": { "wind_mph": 18.2, "rain_in_hr": 0.0, "snow_in_hr": 0.12 },
+      "risk": {
+        "level": "LOW",
+        "score": 1,
+        "factors": { "wind": "LOW", "rain": "LOW", "snow": "LOW", "load_override": null },
+        "reason": "All conditions below Moderate thresholds."
+      }
+    },
+    {
+      "id": "r0-c1",
+      "forecast_hour": "2026-11-21T14:00:00Z",
+      "weather": { "wind_mph": 38.0, "rain_in_hr": 0.0, "snow_in_hr": 0.6 },
+      "risk": {
+        "level": "SEVERE",
+        "score": 4,
+        "factors": { "wind": "HIGH", "rain": "LOW", "snow": "MODERATE", "load_override": "SEVERE" },
+        "reason": "Severe: wind 38.0 mph with load 42,000 lb (> 40,000 lb)."
+      }
+    },
+    {
+      "id": "r0-c2",
+      "forecast_hour": "2026-11-21T14:00:00Z",
+      "weather": { "wind_mph": 12.0, "rain_in_hr": 0.0, "snow_in_hr": 1.2 },
+      "risk": {
+        "level": "HIGH",
+        "score": 3,
+        "factors": { "wind": "LOW", "rain": "LOW", "snow": "HIGH", "load_override": null },
+        "reason": "High: snow 1.20 in/hr."
+      }
+    }
+  ],
+  "meta": { "source": "open-meteo", "cache_hits": 0, "fetched": 3 }
+}

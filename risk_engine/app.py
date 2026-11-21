@@ -1,6 +1,6 @@
-"""Flask risk engine (internal). Chunk 1: app factory, /health, token guard, error shape.
+"""Flask risk engine (internal): /health and token-protected /v1/evaluate.
 
-/v1/evaluate, /v1/heatmap and /v1/alerts are added in Chunks 2 and 4.
+/v1/heatmap and /v1/alerts are added in Chunk 4 and Upgrade 2.
 """
 
 from __future__ import annotations
@@ -14,8 +14,13 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+from evaluate import BeyondHorizon, evaluate_checkpoints
 from flask import Flask, jsonify, request
+from pydantic import ValidationError
+from weather import OpenMeteoProvider, WeatherUpstreamError
 from werkzeug.exceptions import HTTPException
+
+from truckrisk_schemas import EvaluateRequest
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 log = logging.getLogger(__name__)
@@ -58,10 +63,42 @@ def create_app(config: dict | None = None) -> Flask:
     app.config["NWS_USER_AGENT"] = os.environ.get("NWS_USER_AGENT", "")
     if config:
         app.config.update(config)
+    # Injectable so tests and scenarios can supply scripted weather.
+    app.config.setdefault("FORECAST_PROVIDER", None)
+    if app.config["FORECAST_PROVIDER"] is None:
+        app.config["FORECAST_PROVIDER"] = OpenMeteoProvider()
 
     @app.get("/health")
     def health():
         return jsonify({"status": "ok"})
+
+    @app.post("/v1/evaluate")
+    @require_token
+    def v1_evaluate():
+        body = request.get_json(silent=True)
+        if body is None:
+            return error(400, "VALIDATION_ERROR", "Request body must be JSON.")
+        try:
+            req = EvaluateRequest.model_validate(body)
+        except ValidationError as exc:
+            first = exc.errors()[0]
+            field = ".".join(str(p) for p in first["loc"])
+            return error(400, "VALIDATION_ERROR", f"{field}: {first['msg']}", {"field": field})
+        try:
+            resp = evaluate_checkpoints(req, app.config["FORECAST_PROVIDER"])
+        except BeyondHorizon as exc:
+            return error(
+                422,
+                "BEYOND_FORECAST_HORIZON",
+                "Part of this trip is beyond the available weather forecast"
+                + (f" (forecast ends {exc.latest})." if exc.latest else "."),
+                {"checkpoint_ids": exc.ids[:20], "count": len(exc.ids)},
+            )
+        except WeatherUpstreamError as exc:
+            if exc.timeout:
+                return error(504, "UPSTREAM_TIMEOUT", str(exc))
+            return error(502, "UPSTREAM_ERROR", str(exc))
+        return app.response_class(resp.model_dump_json(), mimetype="application/json")
 
     @app.errorhandler(HTTPException)
     def handle_http(exc: HTTPException):

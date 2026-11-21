@@ -11,7 +11,7 @@ from clients import risk_engine
 from geo.geocode import geocode
 
 from .serializers import GeocodeQuerySerializer, TripRequestSerializer
-from .services import iso_z, plan_trip
+from .services import analyze_trip, iso_z, plan_trip
 
 
 @api_view(["GET"])
@@ -47,3 +47,11 @@ def debug_routes(request: Request) -> Response:
             "notes": plan.notes,
         }
     )
+
+
+@api_view(["POST"])
+def analyze(request: Request) -> Response:
+    """A3: three ranked routes with ETA-hour weather and risk at every checkpoint."""
+    ser = TripRequestSerializer(data=request.data)
+    ser.is_valid(raise_exception=True)
+    return Response(analyze_trip(ser.validated_data))

@@ -48,5 +48,8 @@ Non-core features (alerts, unit toggle, saved trips, mobile) must never change a
 - Chunk 1 done: scaffolding, shared schemas, geocoding, three truck routes, checkpoints + ETAs. Debug endpoint `POST /api/debug/routes` (DEBUG only); core check `backend/scripts/core_check_chunk1.py`.
 - Chunk 1 core check passed live (Denver → SLC: 3 distinct routes, 21–23 checkpoints each, ETAs ok). Real HERE fixtures recorded in `backend/tests/fixtures/`.
 - HERE `spans=length,duration` returns ONE span per section; we request `spans=length,duration,speedLimit` so spans split at speed-limit changes (per-zone durations for D7 ETAs).
-- **Next: Chunk 2** (risk engine rules, Open-Meteo, /v1/evaluate, scoring + ranking, /api/analyze).
+- Chunk 2 done: `risk_engine/rules.py` (CORE-3), Open-Meteo client `risk_engine/weather.py` (multi-location list response, `{"error": true, "reason"}` bodies, explicit unit conversion), token-protected `/v1/evaluate`, scoring + ranking (`backend/scoring/`), `POST /api/analyze`. Core check `backend/scripts/core_check_chunk2.py` passed live (Denver → SLC, 3 ranked routes, ~4 s).
+- `decided_by` also returns `only_route` when a single route exists (documented in API contracts).
+- Git: Chunk 1 is staged as the first commit; Chunk 2 is left unstaged for the second commit. Don't `git add` until the developer commits Chunk 1.
+- **Next: Chunk 3** (frontend form, map, checkpoints, route cards).
 - One venv at repo root (`.venv`); run backend tests from `backend/`, risk engine tests from `risk_engine/`.
