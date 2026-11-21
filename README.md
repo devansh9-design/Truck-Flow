@@ -29,6 +29,27 @@ Enter an origin, destination, departure time and load. The app finds three truck
   - follows the phone's GPS;
   - re-checks the road ahead every 15 min, or sooner after 25 mi driven;
   - warns on screen and by voice when weather makes another route safer.
+ 
+## Judgement calls
+
+Where the brief is ambiguous, we chose as follows. The full reasoning is in [docs/projects specification.md](docs/projects%20specification.md) §5–6.
+
+| Question | Our choice |
+| --- | --- |
+| A value sits on a shared boundary (e.g. rain 0.25 in/hr is listed under both Moderate and High) | Each band includes its lower edge, so the value goes to the higher class: wind 25 mph is Moderate, rain 0.25 in/hr is High. |
+| Rain of exactly 1.00 in/hr, snow of exactly 3.0 in/hr | Severe. The brief says No Travel starts *above* these values. |
+| No Travel miles in the ranking | Ranked first, before the brief's four keys (Severe miles, High miles, average risk, travel time), which keep their order. Otherwise a route with No Travel miles and no Severe miles could beat one with only Severe miles. |
+| Severe vs No Travel miles | Counted separately; each route reports both. |
+| Turning checkpoint levels into miles | The route is split into stretches between consecutive checkpoints (origin and destination included). Each stretch takes the **worse** of its two checkpoint levels. |
+| Average risk | Distance-weighted mean of stretch scores (Low = 1 … No Travel = 5). |
+| Near-ties | Miles are compared to 0.1 mi and average risk to 0.01, so rounding noise never decides the ranking. Travel time is compared exactly. |
+| Weight for the load rules | The load as the user enters it. The router gets gross weight = load + tare (default 35,000 lb). |
+| Load rules | Can only raise a level, never lower it. |
+| Wind | Sustained wind at 10 m, not gusts. |
+| Rain | Rain plus showers (liquid), in in/hr. Snowfall is rated separately, converted to in/hr. |
+| Forecast time at a checkpoint | Departure + the router's travel time to that point, rounded to the nearest forecast hour. |
+| Heatmap hour 0 | The departure hour; the slider runs 0–48 h forward from it. |
+| Fewer than 3 distinct routes from the router | Near-duplicates (more than 90% shared) are dropped, and extra options are made through via-points to either side. Fewer than 3 are shown only when no third road exists, with the reason stated. |
 
 ## Architecture
 
